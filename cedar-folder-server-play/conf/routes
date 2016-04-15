@@ -1,0 +1,21 @@
+# Routes
+# This file defines all application routes (Higher priority routes first)
+# ~~~~
+
+# Home page
+GET            /                       controllers.MainFolderServerController.index()
+
+# Folders
+POST           /folders                controllers.FolderController.createFolder()
+GET            /folders/:id            controllers.FolderController.findFolder(id: String)
+DELETE         /folders/:id            controllers.FolderController.deleteFolder(id: String)
+
+# Folder contents
+GET            /folder-contents        controllers.FolderContentsController.findFolderContents(path: play.libs.F.Option[String], resource_types: play.libs.F.Option[String], sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
+
+
+# For CORS - preflight request
+OPTIONS        /*all                   controllers.MainFolderServerController.preflight(all)
+
+## Map static resources from the /public folder to the /assets URL path
+GET            /assets/*file           controllers.Assets.at(path="/public", file)
