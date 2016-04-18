@@ -1,5 +1,7 @@
 package org.metadatacenter.server.neo4j;
 
+import java.util.Map;
+
 public class CypherQueryBuilder {
 
   public static final String RELATION_HAS_SUBFOLDER = "HAS_SUBFOLDER";
@@ -89,6 +91,16 @@ public class CypherQueryBuilder {
     StringBuilder sb = new StringBuilder();
     sb.append("MATCH (folder:Folder {id:{id} })");
     sb.append("DETACH DELETE folder");
+    return sb.toString();
+  }
+
+  public static String updateFolderById(Map<String, String> updateFields) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("MATCH (folder:Folder {id:{id} })");
+    for (String propertyName : updateFields.keySet()) {
+      sb.append("SET folder.").append(propertyName).append("={").append(propertyName).append("}");
+    }
+    sb.append("RETURN folder");
     return sb.toString();
   }
 }

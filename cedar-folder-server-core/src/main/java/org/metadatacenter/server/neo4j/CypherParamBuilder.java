@@ -58,4 +58,11 @@ public class CypherParamBuilder {
     params.put("id", folderId);
     return params;
   }
+
+  public static Map<String, String> updateFolderById(String folderId, Map<String, String> updateFields) {
+    Map<String, String> params = new HashMap<>();
+    params.put("id", folderId);
+    params.putAll(updateFields);
+    return params;
+  }
 }

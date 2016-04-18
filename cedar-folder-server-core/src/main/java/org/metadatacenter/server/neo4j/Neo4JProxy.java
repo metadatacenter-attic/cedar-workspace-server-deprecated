@@ -301,4 +301,20 @@ public class Neo4JProxy {
     }
     return errorsNode.size() == 0;
   }
+
+  public CedarFolder updateFolderById(String folderId, Map<String, String> updateFields) {
+    String cypher = CypherQueryBuilder.updateFolderById(updateFields);
+    Map<String, String> params = CypherParamBuilder.updateFolderById(folderId, updateFields);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode updatedNode = jsonNode.path("results").path(0).path("data").path(0).path("row").path(0);
+    ObjectMapper mapper = new ObjectMapper();
+    CedarFolder updatedFolder = null;
+    try {
+      updatedFolder = mapper.treeToValue(updatedNode, CedarFolder.class);
+    } catch (JsonProcessingException e) {
+      e.printStackTrace();
+    }
+    return updatedFolder;
+  }
 }

@@ -17,7 +17,8 @@ import org.slf4j.LoggerFactory;
 import play.mvc.Result;
 import utils.DataServices;
 
-import javax.management.InstanceNotFoundException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class FolderController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(FolderController.class);
@@ -70,7 +71,7 @@ public class FolderController extends AbstractFolderServerController {
         }
       }
       if (description == null || description.isEmpty()) {
-        throw new IllegalArgumentException("You must supply the description of the new folder !");
+        throw new IllegalArgumentException("You must supply the description of the new folder!");
       }
 
       String parentFolderPath = neo4JProxy.getParentPath(path);
@@ -132,6 +133,72 @@ public class FolderController extends AbstractFolderServerController {
       return forbiddenWithError(e);
     } catch (Exception e) {
       play.Logger.error("Error while getting the folder", e);
+      return internalServerErrorWithError(e);
+    }
+  }
+
+  public static Result updateFolder(String folderId) {
+    try {
+      IAuthRequest frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+
+      JsonNode folderUpdateRequest = request().body().asJson();
+      if (folderUpdateRequest == null) {
+        throw new IllegalArgumentException("You must supply the request body as a json object!");
+      }
+
+      Neo4JProxy neo4JProxy = DataServices.getInstance().getNeo4JProxy();
+
+      String name = null;
+      JsonNode nameNode = folderUpdateRequest.get("name");
+      if (nameNode != null) {
+        name = nameNode.asText();
+        if (name != null) {
+          name = name.trim();
+        }
+      }
+
+      // test update folder name syntax
+      String normalizedName = neo4JProxy.sanitizeName(name);
+      if (!normalizedName.equals(name)) {
+        throw new IllegalArgumentException("The folder name contains invalid characters!");
+      }
+
+      String description = null;
+      JsonNode descriptionNode = folderUpdateRequest.get("description");
+      if (descriptionNode != null) {
+        description = descriptionNode.asText();
+        if (description != null) {
+          description = description.trim();
+        }
+      }
+
+      if ((name == null || name.isEmpty()) && (description == null || description.isEmpty())) {
+        throw new IllegalArgumentException("You must supply the new description or the new name of the folder!");
+      }
+
+      CedarFolder folder = neo4JProxy.findFolderById(folderId);
+      if (folder == null) {
+        play.Logger.error("Folder not found while updating:(" + folderId + ")");
+        return notFound();
+      } else {
+        Map<String, String> updateFields = new HashMap<>();
+        updateFields.put("description", description);
+        updateFields.put("name", name);
+        CedarFolder updatedFolder = neo4JProxy.updateFolderById(folderId, updateFields);
+        if (updatedFolder == null) {
+          return notFound();
+        } else {
+          ObjectMapper mapper = new ObjectMapper();
+          JsonNode updatedFolderNode = mapper.valueToTree(updatedFolder);
+          return ok(updatedFolderNode);
+        }
+      }
+    } catch (CedarAccessException e) {
+      play.Logger.error("Access Error while deleting the folder", e);
+      return forbiddenWithError(e);
+    } catch (Exception e) {
+      play.Logger.error("Error while deleting the folder", e);
       return internalServerErrorWithError(e);
     }
   }

@@ -8,6 +8,7 @@ GET            /                       controllers.MainFolderServerController.in
 # Folders
 POST           /folders                controllers.FolderController.createFolder()
 GET            /folders/:id            controllers.FolderController.findFolder(id: String)
+PUT            /folders/:id            controllers.FolderController.updateFolder(id: String)
 DELETE         /folders/:id            controllers.FolderController.deleteFolder(id: String)
 
 # Folder contents
