@@ -158,6 +158,9 @@ public class FolderContentsController extends AbstractFolderServerController {
 
       r.setResources(resources);
 
+      List<CedarFolder> pathInfo = neo4JProxy.findFolderPath(path);
+      r.setPathInfo(pathInfo);
+
       F.Option<Integer> none = new F.None<>();
       String absoluteUrl = routes.FolderContentsController.findFolderContents(pathParam, resourceTypes, sort, none,
           none)
