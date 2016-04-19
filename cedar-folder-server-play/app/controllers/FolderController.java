@@ -87,8 +87,8 @@ public class FolderController extends AbstractFolderServerController {
         }
 
         CedarUser cu = Authorization.getAccountInfo(frontendRequest);
-        newFolder = neo4JProxy.createFolderAsChildOfId(parentFolder.getId(), newFolderName, description, cu.getUserId
-            ());
+        String creatorProv = USER_BASE_PATH + cu.getUserId();
+        newFolder = neo4JProxy.createFolderAsChildOfId(parentFolder.getId(), newFolderName, description, creatorProv);
         newFolder.setPath(path);
       }
 
