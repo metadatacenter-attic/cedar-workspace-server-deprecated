@@ -1,5 +1,6 @@
 package utils;
 
+import org.metadatacenter.constant.ConfigConstants;
 import org.metadatacenter.server.neo4j.Neo4JProxy;
 import org.metadatacenter.server.neo4j.Neo4jConfig;
 import org.metadatacenter.server.service.UserService;
@@ -35,7 +36,9 @@ public class DataServices {
     nc.setUsersFolderDescription(config.getString(NEO4J_FOLDERS_USERS_DESCRIPTION));
     nc.setAdminUserUUID(config.getString(NEO4J_ADMIN_USER_UUID));
 
-    neo4JProxy = new Neo4JProxy(nc, config.getString(USER_DATA_ID_PATH_BASE));
+    String folderIdPrefix = config.getString(ConfigConstants.LINKED_DATA_ID_PATH_BASE) + config.getString
+        (ConfigConstants.LINKED_DATA_ID_PATH_SUFFIX_FOLDERS);
+    neo4JProxy = new Neo4JProxy(nc, config.getString(USER_DATA_ID_PATH_BASE), folderIdPrefix);
     neo4JProxy.init();
   }
 
