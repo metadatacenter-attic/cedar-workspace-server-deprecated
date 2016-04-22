@@ -199,7 +199,8 @@ public class ResourceController extends AbstractFolderServerController {
         if (name != null) {
           updateFields.put("name", name);
         }
-        CedarFSResource updatedFolder = neoSession.updateResourceById(resourceId, updateFields);
+        //TODO: fix this
+        CedarFSResource updatedFolder = neoSession.updateResourceById(resourceId, CedarResourceType.ELEMENT, updateFields);
         if (updatedFolder == null) {
           return notFound();
         } else {
@@ -235,7 +236,8 @@ public class ResourceController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        boolean deleted = neoSession.deleteResourceById(resourceId);
+        //TODO: fix this
+        boolean deleted = neoSession.deleteResourceById(resourceId, CedarResourceType.ELEMENT);
         if (deleted) {
           return noContent();
         } else {
