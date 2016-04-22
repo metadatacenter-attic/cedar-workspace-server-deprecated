@@ -4,11 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.metadatacenter.model.CedarResourceType;
-import org.metadatacenter.model.folderserver.CedarFolder;
-import org.metadatacenter.model.folderserver.CedarResource;
-import org.metadatacenter.model.request.ResourceListRequest;
-import org.metadatacenter.model.response.ResourceListResponse;
-import org.metadatacenter.server.neo4j.Neo4JProxy;
+import org.metadatacenter.model.folderserver.CedarFSFolder;
+import org.metadatacenter.model.folderserver.CedarFSNode;
+import org.metadatacenter.model.request.NodeListRequest;
+import org.metadatacenter.model.response.FSNodeListResponse;
+import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
@@ -40,8 +40,9 @@ public class FolderContentsController extends AbstractFolderServerController {
 
   public static Result findFolderContentsByPath(F.Option<String> pathParam, F.Option<String> resourceTypes, F
       .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
+    IAuthRequest frontendRequest = null;
     try {
-      IAuthRequest frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
       Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while creating the folder", e);
@@ -62,14 +63,15 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You need to specify path as a request parameter!");
       }
 
-      Neo4JProxy neo4JProxy = DataServices.getInstance().getNeo4JProxy();
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
+          (frontendRequest));
 
-      String normalizedPath = neo4JProxy.getPathUtil().normalizePath(path);
+      String normalizedPath = neoSession.normalizePath(path);
       if (!normalizedPath.equals(path)) {
-        throw new IllegalArgumentException("Do not pass trailing / for paths!");
+        throw new IllegalArgumentException("The path is not in normalized form!");
       }
 
-      CedarFolder folder = neo4JProxy.findFolderByPath(path);
+      CedarFSFolder folder = neoSession.findFolderByPath(path);
       if (folder == null) {
         return notFound();
       }
@@ -80,9 +82,9 @@ public class FolderContentsController extends AbstractFolderServerController {
           none)
           .absoluteURL(request());
 
-      List<CedarFolder> pathInfo = neo4JProxy.findFolderPathByPath(path);
+      List<CedarFSFolder> pathInfo = neoSession.findFolderPathByPath(path);
 
-      return findFolderContents(neo4JProxy, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
+      return findFolderContents(neoSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
           offsetParam);
 
     } catch (IllegalArgumentException e) {
@@ -96,8 +98,9 @@ public class FolderContentsController extends AbstractFolderServerController {
 
   public static Result findFolderContentsById(String id, F.Option<String> resourceTypes, F.Option<String>
       sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
+    IAuthRequest frontendRequest = null;
     try {
-      IAuthRequest frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
       Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while creating the folder", e);
@@ -113,10 +116,10 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You need to specify id as a request parameter!");
       }
 
-      Neo4JProxy neo4JProxy = DataServices.getInstance().getNeo4JProxy();
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
+          (frontendRequest));
 
-      String folderUUID = neo4JProxy.getFolderUUID(id);
-      CedarFolder folder = neo4JProxy.findFolderById(folderUUID);
+      CedarFSFolder folder = neoSession.findFolderById(id);
       if (folder == null) {
         return notFound();
       }
@@ -127,17 +130,17 @@ public class FolderContentsController extends AbstractFolderServerController {
           none)
           .absoluteURL(request());
 
-      List<CedarFolder> pathInfo = null;
+      List<CedarFSFolder> pathInfo = null;
       // in case of the root folder the shortest path won't return the root. We need to add it manually
       // we test it by the name. A flag could be useful later.
-      if (neo4JProxy.getPathUtil().getRootPath().equals(folder.getName())) {
+      if (neoSession.getRootPath().equals(folder.getName())) {
         pathInfo = new ArrayList<>();
         pathInfo.add(folder);
       } else {
-        pathInfo = neo4JProxy.findFolderPathById(folderUUID);
+        pathInfo = neoSession.findFolderPathById(id);
       }
 
-      return findFolderContents(neo4JProxy, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
+      return findFolderContents(neoSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
           offsetParam);
 
     } catch (IllegalArgumentException e) {
@@ -150,9 +153,9 @@ public class FolderContentsController extends AbstractFolderServerController {
   }
 
 
-  private static Result findFolderContents(Neo4JProxy neo4JProxy, CedarFolder folder, String absoluteUrl, List
-      <CedarFolder> pathInfo, F.Option<String> resourceTypes,
-                                           F.Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer>
+  private static Result findFolderContents(Neo4JUserSession neoSession, CedarFSFolder folder, String absoluteUrl,
+                                           List<CedarFSFolder> pathInfo, F.Option<String> resourceTypes, F
+                                               .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer>
                                                offsetParam) {
 
     // Test limit
@@ -224,9 +227,9 @@ public class FolderContentsController extends AbstractFolderServerController {
       }
     }
 
-    ResourceListResponse r = new ResourceListResponse();
+    FSNodeListResponse r = new FSNodeListResponse();
 
-    ResourceListRequest req = new ResourceListRequest();
+    NodeListRequest req = new NodeListRequest();
     req.setResourceTypes(resourceTypeList);
     req.setLimit(limit);
     req.setOffset(offset);
@@ -234,9 +237,7 @@ public class FolderContentsController extends AbstractFolderServerController {
 
     r.setRequest(req);
 
-    List<CedarResource> resources = neo4JProxy.findFolderContents(folder, resourceTypeList, limit, offset,
-        sortList);
-    resources.forEach(cedarResource -> neo4JProxy.convertNeo4JValues(cedarResource));
+    List<CedarFSNode> resources = neoSession.findFolderContents(folder.getId(), resourceTypeList, limit, offset, sortList);
 
     long total = resources.size();
 
@@ -244,8 +245,6 @@ public class FolderContentsController extends AbstractFolderServerController {
     r.setCurrentOffset(offset);
 
     r.setResources(resources);
-
-    pathInfo.forEach(cedarResource -> neo4JProxy.convertNeo4JValues(cedarResource));
 
     r.setPathInfo(pathInfo);
 

@@ -15,6 +15,12 @@ GET            /folders/:id            controllers.FolderController.findFolder(i
 PUT            /folders/:id            controllers.FolderController.updateFolder(id: String)
 DELETE         /folders/:id            controllers.FolderController.deleteFolder(id: String)
 
+# Resources
+POST           /resources              controllers.ResourceController.createResource()
+GET            /resources/:id          controllers.ResourceController.findResource(id: String)
+PUT            /resources/:id          controllers.ResourceController.updateResource(id: String)
+DELETE         /resources/:id          controllers.ResourceController.deleteResource(id: String)
+
 
 # For CORS - preflight request
 OPTIONS        /*all                   controllers.MainFolderServerController.preflight(all)

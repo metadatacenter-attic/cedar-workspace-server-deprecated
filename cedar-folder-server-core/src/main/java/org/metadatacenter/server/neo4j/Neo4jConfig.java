@@ -8,7 +8,8 @@ public class Neo4jConfig {
   private String rootFolderDescription;
   private String usersFolderPath;
   private String usersFolderDescription;
-  private String adminUserUUID;
+  private String lostAndFoundFolderPath;
+  private String lostAndFoundFolderDescription;
 
   public Neo4jConfig() {
   }
@@ -61,11 +62,19 @@ public class Neo4jConfig {
     this.usersFolderDescription = usersFolderDescription;
   }
 
-  public String getAdminUserUUID() {
-    return adminUserUUID;
+  public String getLostAndFoundFolderPath() {
+    return lostAndFoundFolderPath;
   }
 
-  public void setAdminUserUUID(String adminUserUUID) {
-    this.adminUserUUID = adminUserUUID;
+  public void setLostAndFoundFolderPath(String lostAndFoundFolderPath) {
+    this.lostAndFoundFolderPath = lostAndFoundFolderPath;
+  }
+
+  public String getLostAndFoundFolderDescription() {
+    return lostAndFoundFolderDescription;
+  }
+
+  public void setLostAndFoundFolderDescription(String lostAndFoundFolderDescription) {
+    this.lostAndFoundFolderDescription = lostAndFoundFolderDescription;
   }
 }

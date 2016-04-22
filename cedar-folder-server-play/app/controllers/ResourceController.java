@@ -5,33 +5,35 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
+import org.metadatacenter.model.CedarResourceType;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
+import org.metadatacenter.model.folderserver.CedarFSResource;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
 import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
-import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.server.util.ParameterUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.mvc.Result;
 import utils.DataServices;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-public class FolderController extends AbstractFolderServerController {
-  private static Logger log = LoggerFactory.getLogger(FolderController.class);
+public class ResourceController extends AbstractFolderServerController {
+  private static Logger log = LoggerFactory.getLogger(ResourceController.class);
 
-  public static Result createFolder() {
+  public static Result createResource() {
     IAuthRequest frontendRequest = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
       Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
     } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while creating the folder", e);
+      play.Logger.error("Access Error while creating the resource", e);
       return forbiddenWithError(e);
     }
 
@@ -44,82 +46,80 @@ public class FolderController extends AbstractFolderServerController {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
           (frontendRequest));
 
-      // get path parameter
-      String path = ParameterUtil.getStringOrThrowError(creationRequest, "path",
-          "You must supply the path of the new folder!");
-      // test path syntax
-      String normalizedPath = neoSession.normalizePath(path);
-      if (!normalizedPath.equals(path)) {
-        throw new IllegalArgumentException("You must supply the path of the new folder in normalized form!");
-      }
+      // get parentId
+      String parentId = ParameterUtil.getStringOrThrowError(creationRequest, "parentId",
+          "You must supply the parentId of the new resource!");
 
-      // get name parameter
+      // get id
+      String id = ParameterUtil.getStringOrThrowError(creationRequest, "id",
+          "You must supply the id of the new resource!");
+
+      // get name
       String name = ParameterUtil.getStringOrThrowError(creationRequest, "name",
-          "You must supply the name of the new folder!");
-      // test new folder name syntax
-      String normalizedName = neoSession.sanitizeName(name);
-      if (!normalizedName.equals(name)) {
-        throw new IllegalArgumentException("The new folder name contains invalid characters!");
-      }
+          "You must supply the name of the new resource!");
 
-      // get description parameter
+      // get description
       String description = ParameterUtil.getStringOrThrowError(creationRequest, "description",
-          "You must supply the description of the new folder!");
+          "You must supply the description of the new resource!");
+
+      // get resourceType parameter
+      String resourceTypeString = ParameterUtil.getStringOrThrowError(creationRequest, "resourceType",
+          "You must supply the resourceType of the new resource!");
+
+      CedarResourceType resourceType = CedarResourceType.forValue(resourceTypeString);
+      if (resourceType == null) {
+        StringBuilder sb = new StringBuilder();
+        Arrays.asList(CedarResourceType.values()).forEach(crt -> sb.append(crt.getValue()).append(","));
+        throw new IllegalArgumentException("The supplied resource type is invalid! It should be one of:" + sb
+            .toString());
+      }
 
       // check existence of parent folder
-      CedarFSFolder newFolder = null;
-      CedarFSFolder parentFolder = neoSession.findFolderByPath(path);
+      CedarFSResource newResource = null;
+      CedarFSFolder parentFolder = neoSession.findFolderById(parentId);
+
       String candidatePath = null;
       if (parentFolder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-        errorParams.put("path", path);
+        errorParams.put("parentId", parentId);
         return badRequest(generateErrorDescription("parentNotPresent",
-            "The parent folder is not present:" + path, errorParams));
+            "The parent folder is not present:" + parentId, errorParams));
       } else {
-        candidatePath = neoSession.getChildPath(path, name);
-        CedarFSFolder newFolderCandidate = neoSession.findFolderByPath(candidatePath);
-        if (newFolderCandidate != null) {
-          ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-          errorParams.put("path", path);
-          errorParams.put("name", name);
-          errorParams.put("newFolderPath", candidatePath);
-          return badRequest(generateErrorDescription("folderAlreadyPresent",
-              "There is already a folder with the path:" + candidatePath, errorParams));
-        }
-
-        newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, description);
+        // Later we will guarantee some kind of uniqueness for the resource names
+        // Currently we allow duplicate names, the id is the PK
+        newResource = neoSession.createResourceAsChildOfId(parentId, resourceType, name, description);
       }
 
-      if (newFolder != null) {
+      if (newResource != null) {
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode createdFolder = mapper.valueToTree(newFolder);
-        String absoluteUrl = routes.FolderController.findFolder(newFolder.getId()).absoluteURL(request());
+        JsonNode createdResource = mapper.valueToTree(newResource);
+        String absoluteUrl = routes.ResourceController.findResource(id).absoluteURL(request());
         response().setHeader(HttpConstants.HTTP_HEADER_LOCATION, absoluteUrl);
-        return created(createdFolder);
+        return created(createdResource);
       } else {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-        errorParams.put("path", path);
-        errorParams.put("name", name);
-        errorParams.put("newFolderPath", candidatePath);
-        return badRequest(generateErrorDescription("folderNotCreated",
-            "The folder was not created:" + candidatePath, errorParams));
+        errorParams.put("parentId", parentId);
+        errorParams.put("id", id);
+        errorParams.put("resourceType", resourceTypeString);
+        return badRequest(generateErrorDescription("resourceNotCreated",
+            "The resource was not created:" + id, errorParams));
       }
     } catch (IllegalArgumentException e) {
-      play.Logger.error("Illegal argument while creating the folder", e);
+      play.Logger.error("Illegal argument while creating the resource", e);
       return badRequestWithError(e);
     } catch (Exception e) {
-      play.Logger.error("Error while creating the folder", e);
+      play.Logger.error("Error while creating the resource", e);
       return internalServerErrorWithError(e);
     }
   }
 
-  public static Result findFolder(String folderId) {
+  public static Result findResource(String resourceId) {
     IAuthRequest frontendRequest = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
       Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
     } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while reading the folder", e);
+      play.Logger.error("Access Error while reading the resource", e);
       return forbiddenWithError(e);
     }
 
@@ -127,30 +127,30 @@ public class FolderController extends AbstractFolderServerController {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
           (frontendRequest));
 
-      CedarFSFolder folder = neoSession.findFolderById(folderId);
-      if (folder == null) {
+      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-        errorParams.put("id", folderId);
-        return notFound(generateErrorDescription("folderNotFound",
-            "The folder can not be found by id:" + folderId, errorParams));
+        errorParams.put("id", resourceId);
+        return notFound(generateErrorDescription("resourceNotFound",
+            "The resource can not be found by id:" + resourceId, errorParams));
       } else {
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode folderNode = mapper.valueToTree(folder);
+        JsonNode folderNode = mapper.valueToTree(resource);
         return ok(folderNode);
       }
     } catch (Exception e) {
-      play.Logger.error("Error while getting the folder", e);
+      play.Logger.error("Error while getting the resource", e);
       return internalServerErrorWithError(e);
     }
   }
 
-  public static Result updateFolder(String folderId) {
+  public static Result updateResource(String resourceId) {
     IAuthRequest frontendRequest = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
       Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
     } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while updating the folder", e);
+      play.Logger.error("Access Error while updating the resource", e);
       return forbiddenWithError(e);
     }
 
@@ -172,14 +172,6 @@ public class FolderController extends AbstractFolderServerController {
         }
       }
 
-      // test update folder name syntax
-      if (name != null) {
-        String normalizedName = neoSession.sanitizeName(name);
-        if (!normalizedName.equals(name)) {
-          throw new IllegalArgumentException("The folder name contains invalid characters!");
-        }
-      }
-
       String description = null;
       JsonNode descriptionNode = folderUpdateRequest.get("description");
       if (descriptionNode != null) {
@@ -190,15 +182,15 @@ public class FolderController extends AbstractFolderServerController {
       }
 
       if ((name == null || name.isEmpty()) && (description == null || description.isEmpty())) {
-        throw new IllegalArgumentException("You must supply the new description or the new name of the folder!");
+        throw new IllegalArgumentException("You must supply the new description or the new name of the resource!");
       }
 
-      CedarFSFolder folder = neoSession.findFolderById(folderId);
-      if (folder == null) {
+      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-        errorParams.put("id", folderId);
-        return notFound(generateErrorDescription("folderNotFound",
-            "The folder can not be found by id:" + folderId, errorParams));
+        errorParams.put("id", resourceId);
+        return notFound(generateErrorDescription("resourceNotFound",
+            "The resource can not be found by id:" + resourceId, errorParams));
       } else {
         Map<String, String> updateFields = new HashMap<>();
         if (description != null) {
@@ -207,8 +199,7 @@ public class FolderController extends AbstractFolderServerController {
         if (name != null) {
           updateFields.put("name", name);
         }
-        CedarUser cu = Authorization.getAccountInfo(frontendRequest);
-        CedarFSFolder updatedFolder = neoSession.updateFolderById(folderId, updateFields);
+        CedarFSResource updatedFolder = neoSession.updateResourceById(resourceId, updateFields);
         if (updatedFolder == null) {
           return notFound();
         } else {
@@ -218,18 +209,18 @@ public class FolderController extends AbstractFolderServerController {
         }
       }
     } catch (Exception e) {
-      play.Logger.error("Error while updating the folder", e);
+      play.Logger.error("Error while deleting the resource", e);
       return internalServerErrorWithError(e);
     }
   }
 
-  public static Result deleteFolder(String folderId) {
+  public static Result deleteResource(String resourceId) {
     IAuthRequest frontendRequest = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
       Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
     } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while deleting the folder", e);
+      play.Logger.error("Access Error while deleting the resource", e);
       return forbiddenWithError(e);
     }
 
@@ -237,26 +228,25 @@ public class FolderController extends AbstractFolderServerController {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
           (frontendRequest));
 
-      CedarFSFolder folder = neoSession.findFolderById(folderId);
-      if (folder == null) {
+      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-        errorParams.put("id", folderId);
-        return notFound(generateErrorDescription("folderNotFound",
-            "The folder can not be found by id:" + folderId, errorParams));
+        errorParams.put("id", resourceId);
+        return notFound(generateErrorDescription("resourceNotFound",
+            "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        // TODO: check folder contents, if not, delete only if "?force=true" param is present
-        boolean deleted = neoSession.deleteFolderById(folderId);
+        boolean deleted = neoSession.deleteResourceById(resourceId);
         if (deleted) {
           return noContent();
         } else {
           ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-          errorParams.put("id", folderId);
-          return internalServerErrorWithError(generateErrorDescription("folderNotDeleted",
-              "The folder can not be delete by id:" + folderId, errorParams));
+          errorParams.put("id", resourceId);
+          return internalServerErrorWithError(generateErrorDescription("resourceNotDeleted",
+              "The resource can not be delete by id:" + resourceId, errorParams));
         }
       }
     } catch (Exception e) {
-      play.Logger.error("Error while deleting the folder", e);
+      play.Logger.error("Error while deleting the resource", e);
       return internalServerErrorWithError(e);
     }
   }

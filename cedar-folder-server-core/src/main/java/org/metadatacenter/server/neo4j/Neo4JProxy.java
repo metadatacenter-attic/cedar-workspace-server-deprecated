@@ -3,7 +3,6 @@ package org.metadatacenter.server.neo4j;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.entity.ContentType;
@@ -11,116 +10,38 @@ import org.apache.http.util.EntityUtils;
 import org.metadatacenter.constant.HttpConnectionConstants;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.CedarResourceType;
-import org.metadatacenter.model.folderserver.CedarFolder;
-import org.metadatacenter.model.folderserver.CedarResource;
+import org.metadatacenter.model.folderserver.CedarFSFolder;
+import org.metadatacenter.model.folderserver.CedarFSNode;
+import org.metadatacenter.model.folderserver.CedarFSResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Neo4JProxy {
 
-  private final static String SEPARATOR = "/";
-  private final static String FOLDER_NAME_SANITIZER_REGEX = "[^a-zA-Z0-9\\.\\-_' ]";
-  private final static Pattern FOLDER_NAME_SANITIZER_PATTERN = Pattern.compile(FOLDER_NAME_SANITIZER_REGEX);
 
   private Neo4jConfig config;
-  private String userIdPrefix;
   private String folderIdPrefix;
-  private String rootPath;
-  private PathUtil pathUtil;
+  private IPathUtil pathUtil;
+  private static ObjectMapper MAPPER = new ObjectMapper();
 
   private static Logger log = LoggerFactory.getLogger(Neo4JProxy.class);
 
-  public class PathUtil {
 
-    private PathUtil() {
-    }
-
-    public String getSeparator() {
-      return SEPARATOR;
-    }
-
-    public String getRootPath() {
-      return rootPath;
-    }
-
-    public String getChildPath(String parent, String name) {
-      return new StringBuilder().append(parent).append(SEPARATOR).append(name).toString();
-    }
-
-    public String normalizePath(String path) {
-      if (path != null) {
-        if (!rootPath.equals(path)) {
-          while (path.endsWith(SEPARATOR)) {
-            path = path.substring(0, path.length() - 1);
-          }
-          if (!path.startsWith(rootPath)) {
-            path = rootPath + path;
-          }
-          String ds = SEPARATOR + SEPARATOR;
-          while (path.indexOf(ds) != -1) {
-            path = path.replace(ds, SEPARATOR);
-          }
-        }
-      }
-      return path;
-    }
-
-    public String sanitizeName(String name) {
-      Matcher matcher = FOLDER_NAME_SANITIZER_PATTERN.matcher(name);
-      return matcher.replaceAll("_");
-    }
-
-    public String extractName(String path) {
-      if (path != null) {
-        String[] split = StringUtils.split(path, SEPARATOR);
-        if (split != null) {
-          return split[split.length - 1];
-        }
-      }
-      return null;
-    }
-
-    public String getParentPath(String path) {
-      if (path != null) {
-        String[] split = StringUtils.split(path, SEPARATOR);
-        if (split != null) {
-          if (split.length > 0) {
-            String parent = StringUtils.join(Arrays.copyOf(split, split.length - 1), SEPARATOR);
-            return normalizePath(parent);
-          }
-        } else {
-          return rootPath;
-        }
-      }
-      return null;
-    }
-
-    public int getPathDepth(String path) {
-      String normalizedPath = normalizePath(path);
-      return isRoot(normalizedPath) ? 1 : StringUtils.countMatches(normalizedPath, SEPARATOR) + 1;
-    }
-
-    public boolean isRoot(String path) {
-      String normalizedPath = normalizePath(path);
-      return rootPath.equals(normalizedPath);
-    }
-  }
-
-  public Neo4JProxy(Neo4jConfig config, String userIdPrefix, String folderIdPrefix) {
+  public Neo4JProxy(Neo4jConfig config, String folderIdPrefix) {
     this.config = config;
-    this.userIdPrefix = userIdPrefix;
     this.folderIdPrefix = folderIdPrefix;
-    this.rootPath = config.getRootFolderPath();
-    this.pathUtil = new PathUtil();
+    this.pathUtil = new Neo4JPathUtil(config);
   }
 
-  public PathUtil getPathUtil() {
+  IPathUtil getPathUtil() {
     return pathUtil;
+  }
+
+  Neo4jConfig getConfig() {
+    return config;
   }
 
   private JsonNode executeCypherQueryAndCommit(CypherQuery query) {
@@ -128,15 +49,21 @@ public class Neo4JProxy {
   }
 
   private JsonNode executeCypherQueriesAndCommit(List<CypherQuery> queries) {
+    System.out.println("Execute cypher queries --------------------------:");
     List<Map<String, Object>> statements = new ArrayList<>();
     for (CypherQuery q : queries) {
       if (q instanceof CypherQueryWithParameters) {
         CypherQueryWithParameters qp = (CypherQueryWithParameters) q;
+        System.out.println("Query with parameters:");
+        System.out.println("  q: " + qp.getQuery());
+        System.out.println("  p: " + qp.getParameters());
         Map<String, Object> statement = new HashMap<>();
         statement.put("statement", qp.getQuery());
         statement.put("parameters", qp.getParameters());
         statements.add(statement);
       } else if (q instanceof CypherQueryLiteral) {
+        System.out.println("Query literal:");
+        System.out.println("  q: " + q.getQuery());
         CypherQueryLiteral qp = (CypherQueryLiteral) q;
         Map<String, Object> statement = new HashMap<>();
         statement.put("statement", qp.getQuery());
@@ -148,14 +75,11 @@ public class Neo4JProxy {
     body.put("statements", statements);
 
     String requestBody = null;
-    ObjectMapper mapper = new ObjectMapper();
     try {
-      requestBody = mapper.writeValueAsString(body);
+      requestBody = MAPPER.writeValueAsString(body);
     } catch (JsonProcessingException e) {
       log.error("Error serializing cypher queries", e);
     }
-    //System.out.println("Cypher request:");
-    //System.out.println(requestBody);
 
     try {
       HttpResponse response = Request.Post(config.getTransactionUrl())
@@ -169,11 +93,9 @@ public class Neo4JProxy {
           .returnResponse();
 
       int statusCode = response.getStatusLine().getStatusCode();
-      //System.out.println("Status code:" + statusCode);
       String responseAsString = EntityUtils.toString(response.getEntity());
-      //System.out.println(responseAsString);
       if (statusCode == HttpConstants.OK) {
-        return mapper.readTree(responseAsString);
+        return MAPPER.readTree(responseAsString);
       } else {
         return null;
       }
@@ -185,188 +107,228 @@ public class Neo4JProxy {
     return null;
   }
 
-  public void init() {
-    CedarFolder rootFolder = findFolderByPath(config.getRootFolderPath());
-    if (rootFolder == null) {
-      rootFolder = createRootFolder();
-    }
-    CedarFolder usersFolder = findFolderByPath(config.getUsersFolderPath());
-    if (usersFolder == null) {
-      usersFolder = createFolderAsChildOfId(rootFolder.getId(), config.getUsersFolderPath().substring(config
-          .getRootFolderPath().length()), config.getUsersFolderDescription(), config.getAdminUserUUID());
-    }
-  }
-
-  public List<CedarFolder> findFolderPathByPath(String path) {
-    List<CedarFolder> pathList = new ArrayList<>();
+  List<CedarFSFolder> findFolderPathByPath(String path) {
+    List<CedarFSFolder> pathList = new ArrayList<>();
     int cnt = getPathUtil().getPathDepth(path);
     String cypher = CypherQueryBuilder.getFolderLookupQueryByDepth(cnt);
-    Map<String, String> params = CypherParamBuilder.getFolderLookupByDepthParameters(this, path);
+    Map<String, String> params = CypherParamBuilder.getFolderLookupByDepthParameters(pathUtil, path);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
-    JsonNode pathListJsonNode = jsonNode.path("results").path(0).path("data").path(0).path("row");
-    ObjectMapper mapper = new ObjectMapper();
-    pathListJsonNode.forEach(f -> {
-      try {
-        CedarFolder cf = mapper.treeToValue(f, CedarFolder.class);
-        pathList.add(cf);
-      } catch (JsonProcessingException e) {
-        e.printStackTrace();
-      }
-    });
-    return pathList;
-  }
-
-  public List<CedarFolder> findFolderPathById(String id) {
-    List<CedarFolder> pathList = new ArrayList<>();
-    String cypher = CypherQueryBuilder.getFolderLookupQueryById();
-    Map<String, String> params = CypherParamBuilder.getFolderLookupByIDParameters(this, id);
-    CypherQuery q = new CypherQueryWithParameters(cypher, params);
-    JsonNode jsonNode = executeCypherQueryAndCommit(q);
-    JsonNode pathListJsonNode = jsonNode.path("results").path(0).path("data").path(0).path("row").path(0);
-    ObjectMapper mapper = new ObjectMapper();
-    pathListJsonNode.forEach(f -> {
-      try {
-        // relationships are also included, filter them out
-        Map pathElement = mapper.treeToValue(f, Map.class);
-        if (!pathElement.isEmpty()) {
-          CedarFolder cf = mapper.treeToValue(f, CedarFolder.class);
+    JsonNode pathListJsonNode = jsonNode.at("/results/0/data/0/row");
+    if (pathListJsonNode != null && !pathListJsonNode.isMissingNode()) {
+      pathListJsonNode.forEach(f -> {
+        CedarFSFolder cf = buildFolder(f);
+        if (cf != null) {
           pathList.add(cf);
         }
-      } catch (JsonProcessingException e) {
-        e.printStackTrace();
-      }
-    });
+      });
+    }
     return pathList;
   }
 
-  public CedarFolder findFolderByPath(String path) {
-    List<CedarFolder> folderPath = findFolderPathByPath(path);
+  List<CedarFSFolder> findFolderPathById(String id) {
+    List<CedarFSFolder> pathList = new ArrayList<>();
+    String cypher = CypherQueryBuilder.getFolderLookupQueryById();
+    Map<String, String> params = CypherParamBuilder.getFolderLookupByIDParameters(pathUtil, id);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode pathListJsonNode = jsonNode.at("/results/0/data/0/row/0");
+    if (pathListJsonNode != null && !pathListJsonNode.isMissingNode()) {
+      pathListJsonNode.forEach(f -> {
+        // relationships are also included, filter them out
+        Map pathElement = buildMap(f);
+        if (pathElement != null && !pathElement.isEmpty()) {
+          CedarFSFolder cf = buildFolder(f);
+          if (cf != null) {
+            pathList.add(cf);
+          }
+        }
+      });
+    }
+    return pathList;
+  }
+
+  CedarFSFolder findFolderByPath(String path) {
+    List<CedarFSFolder> folderPath = findFolderPathByPath(path);
     if (folderPath != null && folderPath.size() > 0) {
-      CedarFolder folder = folderPath.get(folderPath.size() - 1);
+      CedarFSFolder folder = folderPath.get(folderPath.size() - 1);
       return folder;
     }
     return null;
   }
 
-
-  public CedarFolder findFolderById(String folderUUID) {
+  CedarFSFolder findFolderById(String folderUUID) {
     String cypher = CypherQueryBuilder.getFolderById();
     Map<String, String> params = CypherParamBuilder.getFolderById(folderUUID);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
-    CedarFolder folder = null;
-    // TODO: apply this way of reading the node to the other places as well
     JsonNode folderNode = jsonNode.at("/results/0/data/0/row/0");
-    // TODO: and this check also
-    if (folderNode != null && !folderNode.isMissingNode()) {
-      ObjectMapper mapper = new ObjectMapper();
-      try {
-        folder = mapper.treeToValue(folderNode, CedarFolder.class);
-      } catch (JsonProcessingException e) {
-        e.printStackTrace();
-      }
-    }
-    return folder;
+    return buildFolder(folderNode);
   }
 
-  public CedarFolder createRootFolder() {
-    String cypher = CypherQueryBuilder.createRootFolder();
-    Map<String, String> params = CypherParamBuilder.createFolder(null, config.getRootFolderPath(), config
-        .getRootFolderDescription(), config.getAdminUserUUID());
+  CedarFSResource findResourceById(String resourceURL) {
+    String cypher = CypherQueryBuilder.getResourceById();
+    Map<String, String> params = CypherParamBuilder.getResourceById(resourceURL);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
-    JsonNode rootNode = jsonNode.path("results").path(0).path("data").path(0).path("row").path(0);
-    ObjectMapper mapper = new ObjectMapper();
-    CedarFolder rootFolder = null;
-    try {
-      rootFolder = mapper.treeToValue(rootNode, CedarFolder.class);
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-    }
-    return rootFolder;
+    JsonNode resourceNode = jsonNode.at("/results/0/data/0/row/0");
+    return buildResource(resourceNode);
   }
 
-  public CedarFolder createFolderAsChildOfId(String parentId, String name, String description, String creatorId) {
+  CedarFSFolder createRootFolder(String creatorId) {
+    String cypher = CypherQueryBuilder.createRootFolder();
+    Map<String, String> params = CypherParamBuilder.createFolder(null, config.getRootFolderPath(), config
+        .getRootFolderDescription(), creatorId);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode rootNode = jsonNode.at("/results/0/data/0/row/0");
+    return buildFolder(rootNode);
+  }
+
+  CedarFSFolder createFolderAsChildOfId(String parentId, String name, String description, String creatorId) {
     String cypher = CypherQueryBuilder.createFolderAsChildOfId();
     Map<String, String> params = CypherParamBuilder.createFolder(parentId, name, description, creatorId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
-    JsonNode newNode = jsonNode.path("results").path(0).path("data").path(0).path("row").path(0);
-    ObjectMapper mapper = new ObjectMapper();
-    CedarFolder newFolder = null;
-    try {
-      newFolder = mapper.treeToValue(newNode, CedarFolder.class);
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-    }
-    return newFolder;
+    JsonNode newNode = jsonNode.at("/results/0/data/0/row/0");
+    return buildFolder(newNode);
   }
 
-  public List<CedarResource> findFolderContents(CedarFolder folder, Collection<CedarResourceType> resourceTypes, int
-      limit, int offset, List<String> sortList) {
-    List<CedarResource> resources = new ArrayList<>();
 
-    String cypher = CypherQueryBuilder.getFolderContentsLookupQuery();
-    Map<String, String> params = CypherParamBuilder.getFolderContentsLookupParameters(folder);
+  CedarFSResource createResourceAsChildOfId(String parentId, CedarResourceType resourceType, String name, String
+      description, String creatorId) {
+    String cypher = CypherQueryBuilder.createResourceAsChildOfId();
+    Map<String, String> params = CypherParamBuilder.createResource(parentId, resourceType, name, description,
+        creatorId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
-    JsonNode resourceListJsonNode = jsonNode.path("results").path(0).path("data");
-    ObjectMapper mapper = new ObjectMapper();
-    resourceListJsonNode.forEach(f -> {
-      try {
-        CedarFolder cf = mapper.treeToValue(f.path("row").path(0), CedarFolder.class);
-        resources.add(cf);
-      } catch (JsonProcessingException e) {
-        e.printStackTrace();
-      }
-    });
+    JsonNode newNode = jsonNode.at("/results/0/data/0/row/0");
+    return buildResource(newNode);
+  }
 
+  List<CedarFSNode> findFolderContents(String folderId, Collection<CedarResourceType> resourceTypes, int
+      limit, int offset, List<String> sortList) {
+    List<CedarFSNode> resources = new ArrayList<>();
+
+    String cypher = CypherQueryBuilder.getFolderContentsLookupQuery();
+    Map<String, String> params = CypherParamBuilder.getFolderContentsLookupParameters(folderId);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode resourceListJsonNode = jsonNode.at("/results/0/data");
+    if (resourceListJsonNode != null && !resourceListJsonNode.isMissingNode()) {
+      resourceListJsonNode.forEach(f -> {
+        JsonNode folderNode = f.at("/row/0");
+        CedarFSNode cf = buildFolder(folderNode);
+        if (cf != null) {
+          resources.add(cf);
+        }
+      });
+    }
     return resources;
   }
 
-  public boolean deleteFolderById(String folderId) {
+  boolean deleteFolderById(String folderId) {
     String cypher = CypherQueryBuilder.deleteFolderById();
     Map<String, String> params = CypherParamBuilder.deleteFolderById(folderId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
-    JsonNode errorsNode = jsonNode.path("errors");
+    JsonNode errorsNode = jsonNode.at("/errors");
     if (errorsNode.size() != 0) {
       JsonNode error = errorsNode.path(0);
-      System.out.println("Error while deleting node:");
-      System.out.println(error);
+      log.warn("Error while deleting folder:", error);
     }
     return errorsNode.size() == 0;
   }
 
-  public CedarFolder updateFolderById(String folderId, Map<String, String> updateFields, String updatedBy) {
+  boolean deleteResourceById(String resourceURL) {
+    String cypher = CypherQueryBuilder.deleteResourceById();
+    Map<String, String> params = CypherParamBuilder.deleteResourceById(resourceURL);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode errorsNode = jsonNode.at("/errors");
+    if (errorsNode.size() != 0) {
+      JsonNode error = errorsNode.path(0);
+      log.warn("Error while deleting resource:", error);
+    }
+    return errorsNode.size() == 0;
+  }
+
+  CedarFSFolder updateFolderById(String folderId, Map<String, String> updateFields, String updatedBy) {
     String cypher = CypherQueryBuilder.updateFolderById(updateFields);
     Map<String, String> params = CypherParamBuilder.updateFolderById(folderId, updateFields, updatedBy);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
-    JsonNode updatedNode = jsonNode.path("results").path(0).path("data").path(0).path("row").path(0);
-    ObjectMapper mapper = new ObjectMapper();
-    CedarFolder updatedFolder = null;
-    try {
-      updatedFolder = mapper.treeToValue(updatedNode, CedarFolder.class);
-    } catch (JsonProcessingException e) {
-      e.printStackTrace();
-    }
-    return updatedFolder;
+    JsonNode updatedNode = jsonNode.at("/results/0/data/0/row/0");
+    return buildFolder(updatedNode);
   }
 
-  public void convertNeo4JValues(CedarResource r) {
+  CedarFSResource updateResourceById(String resourceURL, Map<String, String> updateFields, String updatedBy) {
+    String cypher = CypherQueryBuilder.updateResourceById(updateFields);
+    Map<String, String> params = CypherParamBuilder.updateResourceById(resourceURL, updateFields, updatedBy);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode updatedNode = jsonNode.at("/results/0/data/0/row/0");
+    return buildResource(updatedNode);
+  }
+
+  void convertNeo4JValues(CedarFSNode r) {
     r.setId(folderIdPrefix + r.getId());
-    r.setCreatedBy(userIdPrefix + r.getCreatedBy());
-    r.setLastUpdatedBy(userIdPrefix + r.getLastUpdatedBy());
   }
 
-  public String getFolderUUID(String folderId) {
+  String getFolderUUID(String folderId) {
     if (folderId != null && folderId.startsWith(folderIdPrefix)) {
       return folderId.substring(folderIdPrefix.length());
     } else {
       return null;
     }
+  }
+
+  //TODO: fix this, we need to handle the prefixes based on the type
+  //TODO: REALLY IMPORTANT
+  String getResourceUUID(String folderId, CedarResourceType resourceType) {
+    if (folderId != null && folderId.startsWith(folderIdPrefix)) {
+      return folderId.substring(folderIdPrefix.length());
+    } else {
+      return null;
+    }
+  }
+
+  private CedarFSFolder buildFolder(JsonNode f) {
+    CedarFSFolder cf = null;
+    if (f != null && !f.isMissingNode()) {
+      try {
+        cf = MAPPER.treeToValue(f, CedarFSFolder.class);
+      } catch (JsonProcessingException e) {
+        log.error("Error deserializing folder", e);
+      }
+      convertNeo4JValues(cf);
+    }
+    return cf;
+  }
+
+  private CedarFSResource buildResource(JsonNode r) {
+    CedarFSResource cr = null;
+    if (r != null && !r.isMissingNode()) {
+      try {
+        cr = MAPPER.treeToValue(r, CedarFSResource.class);
+      } catch (JsonProcessingException e) {
+        log.error("Error deserializing resource", e);
+      }
+      convertNeo4JValues(cr);
+    }
+    return cr;
+  }
+
+  private Map buildMap(JsonNode f) {
+    Map map = null;
+    if (f != null && !f.isMissingNode()) {
+      try {
+        map = MAPPER.treeToValue(f, Map.class);
+      } catch (JsonProcessingException e) {
+        log.error("Error deserializing map", e);
+      }
+    }
+    return map;
   }
 
 }
