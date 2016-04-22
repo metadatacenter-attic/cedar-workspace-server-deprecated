@@ -68,10 +68,10 @@ public class CypherQueryBuilder {
     return createNodeAsChildOfId(LABEL_RESOURCE);
   }
 
-  private static String createNodeAsChildOfId(String nodeLabel) {
+  private static String createNodeAsChildOfId(String childNodeLabel) {
     StringBuilder sb = new StringBuilder();
-    sb.append("MATCH (parent:").append(nodeLabel).append(" {id:{parentId} })");
-    sb.append(CypherQueryBuilder.createNode("child", nodeLabel));
+    sb.append("MATCH (parent:").append(LABEL_FOLDER).append(" {id:{parentId} })");
+    sb.append(CypherQueryBuilder.createNode("child", childNodeLabel));
     sb.append("CREATE");
     sb.append("(parent)-[:").append(RELATION_CONTAINS).append("]->(child)");
     sb.append("RETURN child");

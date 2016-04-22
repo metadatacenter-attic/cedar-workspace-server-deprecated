@@ -36,13 +36,13 @@ public class CypherParamBuilder {
 
   private static Map<String, String> createNode(String parentId, CedarResourceType resourceType, String name,
                                                 String description, String createdBy) {
-    String folderId = UUID.randomUUID().toString();
+    String nodeId = UUID.randomUUID().toString();
     Instant now = Instant.now();
     String nowString = CedarConstants.xsdDateTimeFormatter.format(now);
     String nowTSString = String.valueOf(now.getEpochSecond());
     Map<String, String> params = new HashMap<>();
     params.put(PARENT_ID, parentId);
-    params.put(ID, folderId);
+    params.put(ID, nodeId);
     params.put(NAME, name);
     params.put(DESCRIPTION, description);
     params.put(CREATED_BY, createdBy);
@@ -106,7 +106,7 @@ public class CypherParamBuilder {
     return updateNodeById(resourceURL, updateFields, updatedBy);
   }
 
-  private static Map<String, String> updateNodeById(String folderId, Map<String, String> updateFields, String
+  private static Map<String, String> updateNodeById(String nodeId, Map<String, String> updateFields, String
       updatedBy) {
     Instant now = Instant.now();
     String nowString = CedarConstants.xsdDateTimeFormatter.format(now);
@@ -115,7 +115,7 @@ public class CypherParamBuilder {
     params.put(LAST_UPDATED_BY, updatedBy);
     params.put(LAST_UPDATED_ON, nowString);
     params.put(LAST_UPDATED_ON_TS, nowTSString);
-    params.put(ID, folderId);
+    params.put(ID, nodeId);
     params.putAll(updateFields);
     return params;
   }
