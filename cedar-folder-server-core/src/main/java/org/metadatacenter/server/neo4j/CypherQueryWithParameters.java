@@ -4,9 +4,9 @@ import java.util.Map;
 
 public class CypherQueryWithParameters implements CypherQuery {
   private String query;
-  private Map<String, String> parameters;
+  private Map<String, Object> parameters;
 
-  public CypherQueryWithParameters(String query, Map<String, String> parameters) {
+  public CypherQueryWithParameters(String query, Map<String, Object> parameters) {
     this.query = query;
     this.parameters = parameters;
   }
@@ -16,7 +16,7 @@ public class CypherQueryWithParameters implements CypherQuery {
     return query;
   }
 
-  public Map<String, String> getParameters() {
+  public Map<String, Object> getParameters() {
     return parameters;
   }
 }

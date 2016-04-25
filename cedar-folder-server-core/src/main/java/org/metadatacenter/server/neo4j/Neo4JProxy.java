@@ -111,7 +111,7 @@ public class Neo4JProxy {
     List<CedarFSFolder> pathList = new ArrayList<>();
     int cnt = getPathUtil().getPathDepth(path);
     String cypher = CypherQueryBuilder.getFolderLookupQueryByDepth(cnt);
-    Map<String, String> params = CypherParamBuilder.getFolderLookupByDepthParameters(pathUtil, path);
+    Map<String, Object> params = CypherParamBuilder.getFolderLookupByDepthParameters(pathUtil, path);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode pathListJsonNode = jsonNode.at("/results/0/data/0/row");
@@ -129,7 +129,7 @@ public class Neo4JProxy {
   List<CedarFSFolder> findFolderPathById(String id) {
     List<CedarFSFolder> pathList = new ArrayList<>();
     String cypher = CypherQueryBuilder.getFolderLookupQueryById();
-    Map<String, String> params = CypherParamBuilder.getFolderLookupByIDParameters(pathUtil, id);
+    Map<String, Object> params = CypherParamBuilder.getFolderLookupByIDParameters(pathUtil, id);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode pathListJsonNode = jsonNode.at("/results/0/data/0/row/0");
@@ -159,7 +159,7 @@ public class Neo4JProxy {
 
   CedarFSFolder findFolderById(String folderUUID) {
     String cypher = CypherQueryBuilder.getFolderById();
-    Map<String, String> params = CypherParamBuilder.getFolderById(folderUUID);
+    Map<String, Object> params = CypherParamBuilder.getFolderById(folderUUID);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode folderNode = jsonNode.at("/results/0/data/0/row/0");
@@ -168,7 +168,7 @@ public class Neo4JProxy {
 
   CedarFSResource findResourceById(String resourceURL) {
     String cypher = CypherQueryBuilder.getResourceById();
-    Map<String, String> params = CypherParamBuilder.getResourceById(resourceURL);
+    Map<String, Object> params = CypherParamBuilder.getResourceById(resourceURL);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode resourceNode = jsonNode.at("/results/0/data/0/row/0");
@@ -177,7 +177,7 @@ public class Neo4JProxy {
 
   CedarFSFolder createRootFolder(String creatorId) {
     String cypher = CypherQueryBuilder.createRootFolder();
-    Map<String, String> params = CypherParamBuilder.createFolder(null, config.getRootFolderPath(), config
+    Map<String, Object> params = CypherParamBuilder.createFolder(null, config.getRootFolderPath(), config
         .getRootFolderDescription(), creatorId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
@@ -187,7 +187,7 @@ public class Neo4JProxy {
 
   CedarFSFolder createFolderAsChildOfId(String parentId, String name, String description, String creatorId) {
     String cypher = CypherQueryBuilder.createFolderAsChildOfId();
-    Map<String, String> params = CypherParamBuilder.createFolder(parentId, name, description, creatorId);
+    Map<String, Object> params = CypherParamBuilder.createFolder(parentId, name, description, creatorId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode newNode = jsonNode.at("/results/0/data/0/row/0");
@@ -198,7 +198,7 @@ public class Neo4JProxy {
   CedarFSResource createResourceAsChildOfId(String parentId, CedarNodeType resourceType, String name, String
       description, String creatorId) {
     String cypher = CypherQueryBuilder.createResourceAsChildOfId();
-    Map<String, String> params = CypherParamBuilder.createResource(parentId, resourceType, name, description,
+    Map<String, Object> params = CypherParamBuilder.createResource(parentId, resourceType, name, description,
         creatorId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
@@ -211,7 +211,8 @@ public class Neo4JProxy {
     List<CedarFSNode> resources = new ArrayList<>();
 
     String cypher = CypherQueryBuilder.getFolderContentsLookupQuery();
-    Map<String, String> params = CypherParamBuilder.getFolderContentsLookupParameters(folderId);
+    Map<String, Object> params = CypherParamBuilder.getFolderContentsLookupParameters(folderId, resourceTypes, limit,
+        offset);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode resourceListJsonNode = jsonNode.at("/results/0/data");
@@ -229,7 +230,7 @@ public class Neo4JProxy {
 
   boolean deleteFolderById(String folderId) {
     String cypher = CypherQueryBuilder.deleteFolderById();
-    Map<String, String> params = CypherParamBuilder.deleteFolderById(folderId);
+    Map<String, Object> params = CypherParamBuilder.deleteFolderById(folderId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode errorsNode = jsonNode.at("/errors");
@@ -242,7 +243,7 @@ public class Neo4JProxy {
 
   boolean deleteResourceById(String resourceURL) {
     String cypher = CypherQueryBuilder.deleteResourceById();
-    Map<String, String> params = CypherParamBuilder.deleteResourceById(resourceURL);
+    Map<String, Object> params = CypherParamBuilder.deleteResourceById(resourceURL);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode errorsNode = jsonNode.at("/errors");
@@ -255,7 +256,7 @@ public class Neo4JProxy {
 
   CedarFSFolder updateFolderById(String folderId, Map<String, String> updateFields, String updatedBy) {
     String cypher = CypherQueryBuilder.updateFolderById(updateFields);
-    Map<String, String> params = CypherParamBuilder.updateFolderById(folderId, updateFields, updatedBy);
+    Map<String, Object> params = CypherParamBuilder.updateFolderById(folderId, updateFields, updatedBy);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode updatedNode = jsonNode.at("/results/0/data/0/row/0");
@@ -264,7 +265,7 @@ public class Neo4JProxy {
 
   CedarFSResource updateResourceById(String resourceURL, Map<String, String> updateFields, String updatedBy) {
     String cypher = CypherQueryBuilder.updateResourceById(updateFields);
-    Map<String, String> params = CypherParamBuilder.updateResourceById(resourceURL, updateFields, updatedBy);
+    Map<String, Object> params = CypherParamBuilder.updateResourceById(resourceURL, updateFields, updatedBy);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode updatedNode = jsonNode.at("/results/0/data/0/row/0");

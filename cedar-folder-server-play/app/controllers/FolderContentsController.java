@@ -212,7 +212,7 @@ public class FolderContentsController extends AbstractFolderServerController {
       resourceTypesString = resourceTypesString.trim();
     }
     if (resourceTypesString == null || resourceTypesString.isEmpty()) {
-      throw new IllegalArgumentException("You must pass in resource_types as a comma separatred list!");
+      throw new IllegalArgumentException("You must pass in resource_types as a comma separated list!");
     }
 
     List<String> resourceTypeStringList = Arrays.asList(StringUtils.split(resourceTypesString, ","));

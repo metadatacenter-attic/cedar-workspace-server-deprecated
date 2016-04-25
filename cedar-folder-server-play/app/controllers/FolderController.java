@@ -29,7 +29,7 @@ public class FolderController extends AbstractFolderServerController {
     IAuthRequest frontendRequest = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      Authorization.mustHavePermission(frontendRequest, CedarPermission.FOLDER_CREATE);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while creating the folder", e);
       return forbiddenWithError(e);
@@ -117,7 +117,7 @@ public class FolderController extends AbstractFolderServerController {
     IAuthRequest frontendRequest = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      Authorization.mustHavePermission(frontendRequest, CedarPermission.FOLDER_READ);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while reading the folder", e);
       return forbiddenWithError(e);
@@ -148,7 +148,7 @@ public class FolderController extends AbstractFolderServerController {
     IAuthRequest frontendRequest = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      Authorization.mustHavePermission(frontendRequest, CedarPermission.FOLDER_UPDATE);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while updating the folder", e);
       return forbiddenWithError(e);
@@ -227,7 +227,7 @@ public class FolderController extends AbstractFolderServerController {
     IAuthRequest frontendRequest = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      Authorization.mustHavePermission(frontendRequest, CedarPermission.FOLDER_DELETE);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while deleting the folder", e);
       return forbiddenWithError(e);

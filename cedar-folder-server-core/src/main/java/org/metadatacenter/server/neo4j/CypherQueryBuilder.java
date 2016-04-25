@@ -112,7 +112,10 @@ public class CypherQueryBuilder {
     sb.append("MATCH (parent)");
     sb.append("-[:").append(RELATION_CONTAINS).append("]->");
     sb.append("(child)");
+    sb.append("WHERE child.resourceType in {resourceTypeList}");
     sb.append("RETURN child");
+    sb.append(" SKIP {offset}");
+    sb.append(" LIMIT {limit}");
     return sb.toString();
   }
 
