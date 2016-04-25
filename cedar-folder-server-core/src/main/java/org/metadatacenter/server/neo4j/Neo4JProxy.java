@@ -9,7 +9,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.metadatacenter.constant.HttpConnectionConstants;
 import org.metadatacenter.constant.HttpConstants;
-import org.metadatacenter.model.CedarResourceType;
+import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.model.folderserver.CedarFSResource;
@@ -195,7 +195,7 @@ public class Neo4JProxy {
   }
 
 
-  CedarFSResource createResourceAsChildOfId(String parentId, CedarResourceType resourceType, String name, String
+  CedarFSResource createResourceAsChildOfId(String parentId, CedarNodeType resourceType, String name, String
       description, String creatorId) {
     String cypher = CypherQueryBuilder.createResourceAsChildOfId();
     Map<String, String> params = CypherParamBuilder.createResource(parentId, resourceType, name, description,
@@ -206,7 +206,7 @@ public class Neo4JProxy {
     return buildResource(newNode);
   }
 
-  List<CedarFSNode> findFolderContents(String folderId, Collection<CedarResourceType> resourceTypes, int
+  List<CedarFSNode> findFolderContents(String folderId, Collection<CedarNodeType> resourceTypes, int
       limit, int offset, List<String> sortList) {
     List<CedarFSNode> resources = new ArrayList<>();
 
@@ -217,8 +217,8 @@ public class Neo4JProxy {
     JsonNode resourceListJsonNode = jsonNode.at("/results/0/data");
     if (resourceListJsonNode != null && !resourceListJsonNode.isMissingNode()) {
       resourceListJsonNode.forEach(f -> {
-        JsonNode folderNode = f.at("/row/0");
-        CedarFSNode cf = buildFolder(folderNode);
+        JsonNode nodeNode = f.at("/row/0");
+        CedarFSNode cf = buildNode(nodeNode);
         if (cf != null) {
           resources.add(cf);
         }
@@ -285,7 +285,7 @@ public class Neo4JProxy {
 
   //TODO: fix this, we need to handle the prefixes based on the type
   //TODO: REALLY IMPORTANT
-  String getResourceUUID(String folderId, CedarResourceType resourceType) {
+  String getResourceUUID(String folderId, CedarNodeType resourceType) {
     if (folderId != null && folderId.startsWith(folderIdPrefix)) {
       return folderId.substring(folderIdPrefix.length());
     } else {
@@ -300,6 +300,19 @@ public class Neo4JProxy {
         cf = MAPPER.treeToValue(f, CedarFSFolder.class);
       } catch (JsonProcessingException e) {
         log.error("Error deserializing folder", e);
+      }
+      convertNeo4JValues(cf);
+    }
+    return cf;
+  }
+
+  private CedarFSNode buildNode(JsonNode f) {
+    CedarFSNode cf = null;
+    if (f != null && !f.isMissingNode()) {
+      try {
+        cf = MAPPER.treeToValue(f, CedarFSNode.class);
+      } catch (JsonProcessingException e) {
+        log.error("Error deserializing node", e);
       }
       convertNeo4JValues(cf);
     }

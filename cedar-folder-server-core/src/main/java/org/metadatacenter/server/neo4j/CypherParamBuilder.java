@@ -2,7 +2,7 @@ package org.metadatacenter.server.neo4j;
 
 import org.apache.commons.lang3.StringUtils;
 import org.metadatacenter.constant.CedarConstants;
-import org.metadatacenter.model.CedarResourceType;
+import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
 
 import java.time.Instant;
@@ -26,15 +26,15 @@ public class CypherParamBuilder {
 
 
   public static Map<String, String> createFolder(String parentId, String name, String description, String createdBy) {
-    return createNode(parentId, CedarResourceType.FOLDER, name, description, createdBy);
+    return createNode(parentId, CedarNodeType.FOLDER, name, description, createdBy);
   }
 
-  public static Map<String, String> createResource(String parentId, CedarResourceType resourceType, String name,
+  public static Map<String, String> createResource(String parentId, CedarNodeType resourceType, String name,
                                                    String description, String createdBy) {
     return createNode(parentId, resourceType, name, description, createdBy);
   }
 
-  private static Map<String, String> createNode(String parentId, CedarResourceType resourceType, String name,
+  private static Map<String, String> createNode(String parentId, CedarNodeType resourceType, String name,
                                                 String description, String createdBy) {
     String nodeId = UUID.randomUUID().toString();
     Instant now = Instant.now();

@@ -3,7 +3,7 @@ package controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.metadatacenter.model.CedarResourceType;
+import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.model.request.NodeListRequest;
@@ -216,12 +216,12 @@ public class FolderContentsController extends AbstractFolderServerController {
     }
 
     List<String> resourceTypeStringList = Arrays.asList(StringUtils.split(resourceTypesString, ","));
-    List<CedarResourceType> resourceTypeList = new ArrayList<>();
+    List<CedarNodeType> resourceTypeList = new ArrayList<>();
     for (String rt : resourceTypeStringList) {
-      CedarResourceType crt = CedarResourceType.forValue(rt);
+      CedarNodeType crt = CedarNodeType.forValue(rt);
       if (crt == null) {
         throw new IllegalArgumentException("You passed an illegal sort type:'" + rt + "'. The allowed values are:" +
-            CedarResourceType.values());
+            CedarNodeType.values());
       } else {
         resourceTypeList.add(crt);
       }

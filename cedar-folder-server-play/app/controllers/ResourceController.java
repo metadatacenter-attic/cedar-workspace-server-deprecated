@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
-import org.metadatacenter.model.CedarResourceType;
+import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.model.folderserver.CedarFSResource;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
@@ -66,10 +66,10 @@ public class ResourceController extends AbstractFolderServerController {
       String resourceTypeString = ParameterUtil.getStringOrThrowError(creationRequest, "resourceType",
           "You must supply the resourceType of the new resource!");
 
-      CedarResourceType resourceType = CedarResourceType.forValue(resourceTypeString);
+      CedarNodeType resourceType = CedarNodeType.forValue(resourceTypeString);
       if (resourceType == null) {
         StringBuilder sb = new StringBuilder();
-        Arrays.asList(CedarResourceType.values()).forEach(crt -> sb.append(crt.getValue()).append(","));
+        Arrays.asList(CedarNodeType.values()).forEach(crt -> sb.append(crt.getValue()).append(","));
         throw new IllegalArgumentException("The supplied resource type is invalid! It should be one of:" + sb
             .toString());
       }
@@ -200,7 +200,7 @@ public class ResourceController extends AbstractFolderServerController {
           updateFields.put("name", name);
         }
         //TODO: fix this
-        CedarFSResource updatedFolder = neoSession.updateResourceById(resourceId, CedarResourceType.ELEMENT, updateFields);
+        CedarFSResource updatedFolder = neoSession.updateResourceById(resourceId, CedarNodeType.ELEMENT, updateFields);
         if (updatedFolder == null) {
           return notFound();
         } else {
@@ -237,7 +237,7 @@ public class ResourceController extends AbstractFolderServerController {
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
         //TODO: fix this
-        boolean deleted = neoSession.deleteResourceById(resourceId, CedarResourceType.ELEMENT);
+        boolean deleted = neoSession.deleteResourceById(resourceId, CedarNodeType.ELEMENT);
         if (deleted) {
           return noContent();
         } else {
