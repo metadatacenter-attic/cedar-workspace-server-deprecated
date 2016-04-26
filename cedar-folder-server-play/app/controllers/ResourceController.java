@@ -58,10 +58,6 @@ public class ResourceController extends AbstractFolderServerController {
       String name = ParameterUtil.getStringOrThrowError(creationRequest, "name",
           "You must supply the name of the new resource!");
 
-      // get description
-      String description = ParameterUtil.getStringOrThrowError(creationRequest, "description",
-          "You must supply the description of the new resource!");
-
       // get resourceType parameter
       String resourceTypeString = ParameterUtil.getStringOrThrowError(creationRequest, "resourceType",
           "You must supply the resourceType of the new resource!");
@@ -72,6 +68,15 @@ public class ResourceController extends AbstractFolderServerController {
         Arrays.asList(CedarNodeType.values()).forEach(crt -> sb.append(crt.getValue()).append(","));
         throw new IllegalArgumentException("The supplied resource type is invalid! It should be one of:" + sb
             .toString());
+      }
+
+
+      String description = "";
+      // let's not read resource description for instances
+      if (resourceType != CedarNodeType.INSTANCE) {
+        // get description
+        description = ParameterUtil.getStringOrThrowError(creationRequest, "description",
+            "You must supply the description of the new resource!");
       }
 
       // check existence of parent folder
