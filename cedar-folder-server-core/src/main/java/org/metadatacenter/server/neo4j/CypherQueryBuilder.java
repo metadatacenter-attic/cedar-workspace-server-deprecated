@@ -1,5 +1,6 @@
 package org.metadatacenter.server.neo4j;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.metadatacenter.server.neo4j.Neo4JFields.*;
@@ -25,22 +26,30 @@ public class CypherQueryBuilder {
     return sb.toString();
   }
 
-  public static String createRootFolder() {
+  public static String createRootFolder(Map<String, Object> extraParams) {
     StringBuilder sb = new StringBuilder();
-    sb.append(createFolder("root"));
+    sb.append(createFolder("root", extraParams));
     sb.append("RETURN root");
     return sb.toString();
   }
 
   public static String createFolder(String folderAlias) {
-    return createNode(folderAlias, LABEL_FOLDER);
+    return createFolder(folderAlias, null);
+  }
+
+  public static String createFolder(String folderAlias, Map<String, Object> extraProperties) {
+    return createNode(folderAlias, LABEL_FOLDER, extraProperties);
   }
 
   public static String createResource(String resourceAlias) {
-    return createNode(resourceAlias, LABEL_RESOURCE);
+    return createResource(resourceAlias, null);
   }
 
-  private static String createNode(String nodeAlias, String nodeLabel) {
+  public static String createResource(String resourceAlias, Map<String, Object> extraProperties) {
+    return createNode(resourceAlias, LABEL_RESOURCE, extraProperties);
+  }
+
+  private static String createNode(String nodeAlias, String nodeLabel, Map<String, Object> extraProperties) {
     StringBuilder sb = new StringBuilder();
     sb.append("CREATE (");
     sb.append(nodeAlias).append(":").append(nodeLabel).append(" {");
@@ -53,6 +62,9 @@ public class CypherQueryBuilder {
     sb.append(buildCreateAssignment(LAST_UPDATED_BY)).append(",");
     sb.append(buildCreateAssignment(LAST_UPDATED_ON)).append(",");
     sb.append(buildCreateAssignment(LAST_UPDATED_ON_TS)).append(",");
+    if (extraProperties != null && !extraProperties.isEmpty()) {
+      extraProperties.forEach((key, value) -> sb.append(buildCreateAssignment(key)).append(","));
+    }
     sb.append(buildCreateAssignment(RESOURCE_TYPE));
     sb.append("}");
     sb.append(")");
@@ -60,18 +72,18 @@ public class CypherQueryBuilder {
   }
 
 
-  public static String createFolderAsChildOfId() {
-    return createNodeAsChildOfId(LABEL_FOLDER);
+  public static String createFolderAsChildOfId(Map<String, Object> extraProperties) {
+    return createNodeAsChildOfId(LABEL_FOLDER, extraProperties);
   }
 
-  public static String createResourceAsChildOfId() {
-    return createNodeAsChildOfId(LABEL_RESOURCE);
+  public static String createResourceAsChildOfId(Map<String, Object> extraProperties) {
+    return createNodeAsChildOfId(LABEL_RESOURCE, extraProperties);
   }
 
-  private static String createNodeAsChildOfId(String childNodeLabel) {
+  private static String createNodeAsChildOfId(String childNodeLabel, Map<String, Object> extraProperties) {
     StringBuilder sb = new StringBuilder();
     sb.append("MATCH (parent:").append(LABEL_FOLDER).append(" {id:{parentId} })");
-    sb.append(CypherQueryBuilder.createNode("child", childNodeLabel));
+    sb.append(CypherQueryBuilder.createNode("child", childNodeLabel, extraProperties));
     sb.append("CREATE");
     sb.append("(parent)-[:").append(RELATION_CONTAINS).append("]->(child)");
     sb.append("RETURN child");

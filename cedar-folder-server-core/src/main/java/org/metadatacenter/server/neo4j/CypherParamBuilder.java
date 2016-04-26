@@ -23,16 +23,26 @@ public class CypherParamBuilder {
 
 
   public static Map<String, Object> createFolder(String parentId, String name, String description, String createdBy) {
-    return createNode(parentId, CedarNodeType.FOLDER, name, description, createdBy);
+    return createFolder(parentId, name, description, createdBy, null);
   }
 
-  public static Map<String, Object> createResource(String parentId, CedarNodeType resourceType, String name,
-                                                   String description, String createdBy) {
-    return createNode(parentId, resourceType, name, description, createdBy);
+  public static Map<String, Object> createFolder(String parentId, String name, String description, String createdBy,
+                                                 Map<String, Object> extraProperties) {
+    return createNode(parentId, CedarNodeType.FOLDER, name, description, createdBy, extraProperties);
   }
 
-  private static Map<String, Object> createNode(String parentId, CedarNodeType resourceType, String name,
-                                                String description, String createdBy) {
+  public static Map<String, Object> createResource(String parentId, CedarNodeType resourceType, String name, String
+      description, String createdBy) {
+    return createResource(parentId, resourceType, name, description, createdBy, null);
+  }
+
+  public static Map<String, Object> createResource(String parentId, CedarNodeType resourceType, String name, String
+      description, String createdBy, Map<String, Object> extraProperties) {
+    return createNode(parentId, resourceType, name, description, createdBy, extraProperties);
+  }
+
+  private static Map<String, Object> createNode(String parentId, CedarNodeType resourceType, String name, String
+      description, String createdBy, Map<String, Object> extraProperties) {
     String nodeId = UUID.randomUUID().toString();
     Instant now = Instant.now();
     String nowString = CedarConstants.xsdDateTimeFormatter.format(now);
@@ -49,6 +59,9 @@ public class CypherParamBuilder {
     params.put(LAST_UPDATED_ON, nowString);
     params.put(LAST_UPDATED_ON_TS, nowTSString);
     params.put(RESOURCE_TYPE, resourceType.getValue());
+    if (extraProperties != null && !extraProperties.isEmpty()) {
+      extraProperties.forEach((key, value) -> params.put(key, value));
+    }
     return params;
   }
 

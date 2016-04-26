@@ -176,18 +176,21 @@ public class Neo4JProxy {
   }
 
   CedarFSFolder createRootFolder(String creatorId) {
-    String cypher = CypherQueryBuilder.createRootFolder();
+    Map<String, Object> extraParams = new HashMap<>();
+    extraParams.put("isRoot", true);
+    String cypher = CypherQueryBuilder.createRootFolder(extraParams);
     Map<String, Object> params = CypherParamBuilder.createFolder(null, config.getRootFolderPath(), config
-        .getRootFolderDescription(), creatorId);
+        .getRootFolderDescription(), creatorId, extraParams);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode rootNode = jsonNode.at("/results/0/data/0/row/0");
     return buildFolder(rootNode);
   }
 
-  CedarFSFolder createFolderAsChildOfId(String parentId, String name, String description, String creatorId) {
-    String cypher = CypherQueryBuilder.createFolderAsChildOfId();
-    Map<String, Object> params = CypherParamBuilder.createFolder(parentId, name, description, creatorId);
+  CedarFSFolder createFolderAsChildOfId(String parentId, String name, String description, String creatorId, Map<String,
+      Object> extraProperties) {
+    String cypher = CypherQueryBuilder.createFolderAsChildOfId(extraProperties);
+    Map<String, Object> params = CypherParamBuilder.createFolder(parentId, name, description, creatorId, extraProperties);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode newNode = jsonNode.at("/results/0/data/0/row/0");
@@ -196,8 +199,8 @@ public class Neo4JProxy {
 
 
   CedarFSResource createResourceAsChildOfId(String parentId, CedarNodeType resourceType, String name, String
-      description, String creatorId) {
-    String cypher = CypherQueryBuilder.createResourceAsChildOfId();
+      description, String creatorId, Map<String, Object> extraProperties) {
+    String cypher = CypherQueryBuilder.createResourceAsChildOfId(extraProperties);
     Map<String, Object> params = CypherParamBuilder.createResource(parentId, resourceType, name, description,
         creatorId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);

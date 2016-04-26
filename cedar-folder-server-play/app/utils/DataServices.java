@@ -46,7 +46,7 @@ public class DataServices {
     CedarUser fakeAdminUser = new CedarUser();
     fakeAdminUser.setUserId(config.getString(NEO4J_ADMIN_USER_UUID));
 
-    Neo4JUserSession neo4JSession = getNeo4JSession(fakeAdminUser);
+    Neo4JUserSession neo4JSession = getNeo4JSession(fakeAdminUser, false);
     neo4JSession.ensureGlobalObjectsExists();
   }
 
@@ -55,7 +55,17 @@ public class DataServices {
   }
 
   public Neo4JUserSession getNeo4JSession(CedarUser cu) {
-    Configuration config = Play.application().configuration();
-    return Neo4JUserSession.get(neo4JProxy, cu, config.getString(USER_DATA_ID_PATH_BASE));
+    return getNeo4JSession(cu, true);
   }
+
+  private Neo4JUserSession getNeo4JSession(CedarUser cu, boolean createHome) {
+    Configuration config = Play.application().configuration();
+    Neo4JUserSession neo4JSession = Neo4JUserSession.get(neo4JProxy, cu, config.getString(USER_DATA_ID_PATH_BASE));
+    if (createHome) {
+      neo4JSession.ensureUserHomeExists();
+    }
+    return neo4JSession;
+  }
+
+
 }
