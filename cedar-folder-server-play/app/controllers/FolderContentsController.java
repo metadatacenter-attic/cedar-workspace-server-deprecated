@@ -239,7 +239,7 @@ public class FolderContentsController extends AbstractFolderServerController {
 
     List<CedarFSNode> resources = neoSession.findFolderContents(folder.getId(), resourceTypeList, limit, offset, sortList);
 
-    long total = resources.size();
+    long total = neoSession.findFolderContentsCount(folder.getId(), resourceTypeList);
 
     r.setTotalCount(total);
     r.setCurrentOffset(offset);

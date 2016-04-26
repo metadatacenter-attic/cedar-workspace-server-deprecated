@@ -131,6 +131,18 @@ public class CypherQueryBuilder {
     return sb.toString();
   }
 
+  public static String getFolderContentsCountQuery() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("MATCH (parent:").append(LABEL_FOLDER).append(" {id:{id} })");
+    sb.append("MATCH (child)");
+    sb.append("MATCH (parent)");
+    sb.append("-[:").append(RELATION_CONTAINS).append("]->");
+    sb.append("(child)");
+    sb.append("WHERE child.resourceType in {resourceTypeList}");
+    sb.append("RETURN count(child)");
+    return sb.toString();
+  }
+
   public static String getFolderById() {
     StringBuilder sb = new StringBuilder();
     sb.append("MATCH (folder:").append(LABEL_FOLDER).append(" {id:{id} })");

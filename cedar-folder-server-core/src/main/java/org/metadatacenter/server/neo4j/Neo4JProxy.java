@@ -231,6 +231,19 @@ public class Neo4JProxy {
     return resources;
   }
 
+  public long findFolderContentsCount(String folderId, List<CedarNodeType> resourceTypeList) {
+    String cypher = CypherQueryBuilder.getFolderContentsCountQuery();
+    Map<String, Object> params = CypherParamBuilder.getFolderContentsCountParameters(folderId, resourceTypeList);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode countNode = jsonNode.at("/results/0/data/0/row/0");
+    if (countNode != null && !countNode.isMissingNode()) {
+      return countNode.asLong();
+    } else {
+      return -1;
+    }
+  }
+
   boolean deleteFolderById(String folderId) {
     String cypher = CypherQueryBuilder.deleteFolderById();
     Map<String, Object> params = CypherParamBuilder.deleteFolderById(folderId);

@@ -88,6 +88,16 @@ public class CypherParamBuilder {
     return params;
   }
 
+  public static Map<String, Object> getFolderContentsCountParameters(String folderId, Collection<CedarNodeType>
+      resourceTypes) {
+    Map<String, Object> params = new HashMap<>();
+    params.put(ID, folderId);
+    List<String> rtl = new ArrayList<>();
+    resourceTypes.forEach(cnt -> rtl.add(cnt.getValue()));
+    params.put("resourceTypeList", rtl);
+    return params;
+  }
+
   public static Map<String, Object> getFolderById(String folderId) {
     Map<String, Object> params = new HashMap<>();
     params.put(ID, folderId);

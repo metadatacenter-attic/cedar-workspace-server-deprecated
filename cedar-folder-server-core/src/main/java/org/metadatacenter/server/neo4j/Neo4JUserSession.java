@@ -123,6 +123,10 @@ public class Neo4JUserSession {
     return neo4JProxy.findFolderContents(getFolderUUID(folderURL), resourceTypeList, limit, offset, sortList);
   }
 
+  public long findFolderContentsCount(String folderURL, List<CedarNodeType> resourceTypeList) {
+    return neo4JProxy.findFolderContentsCount(getFolderUUID(folderURL), resourceTypeList);
+  }
+
   public void ensureGlobalObjectsExists() {
     Neo4jConfig config = neo4JProxy.getConfig();
     IPathUtil pathUtil = neo4JProxy.getPathUtil();
