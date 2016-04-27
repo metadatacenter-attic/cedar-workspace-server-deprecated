@@ -27,6 +27,7 @@ import java.util.List;
 
 public class FolderContentsController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(FolderContentsController.class);
+  private static ObjectMapper MAPPER = new ObjectMapper();
 
   final static List<String> knownSortKeys;
   public static final String DEFAULT_SORT = "name";
@@ -251,8 +252,7 @@ public class FolderContentsController extends AbstractFolderServerController {
 
     r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
 
-    ObjectMapper mapper = new ObjectMapper();
-    JsonNode resp = mapper.valueToTree(r);
+    JsonNode resp = MAPPER.valueToTree(r);
     return ok(resp);
   }
 

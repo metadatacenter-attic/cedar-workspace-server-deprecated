@@ -24,6 +24,7 @@ import java.util.Map;
 
 public class FolderController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(FolderController.class);
+  private static ObjectMapper MAPPER = new ObjectMapper();
 
   public static Result createFolder() {
     IAuthRequest frontendRequest = null;
@@ -91,8 +92,7 @@ public class FolderController extends AbstractFolderServerController {
       }
 
       if (newFolder != null) {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode createdFolder = mapper.valueToTree(newFolder);
+        JsonNode createdFolder = MAPPER.valueToTree(newFolder);
         String absoluteUrl = routes.FolderController.findFolder(newFolder.getId()).absoluteURL(request());
         response().setHeader(HttpConstants.HTTP_HEADER_LOCATION, absoluteUrl);
         return created(createdFolder);
@@ -134,8 +134,7 @@ public class FolderController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode folderNode = mapper.valueToTree(folder);
+        JsonNode folderNode = MAPPER.valueToTree(folder);
         return ok(folderNode);
       }
     } catch (Exception e) {
@@ -212,8 +211,7 @@ public class FolderController extends AbstractFolderServerController {
         if (updatedFolder == null) {
           return notFound();
         } else {
-          ObjectMapper mapper = new ObjectMapper();
-          JsonNode updatedFolderNode = mapper.valueToTree(updatedFolder);
+          JsonNode updatedFolderNode = MAPPER.valueToTree(updatedFolder);
           return ok(updatedFolderNode);
         }
       }

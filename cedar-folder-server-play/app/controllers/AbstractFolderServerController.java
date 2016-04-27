@@ -10,10 +10,7 @@ import org.metadatacenter.server.security.model.user.CedarUser;
 import play.Configuration;
 import play.Play;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
 
 public class AbstractFolderServerController extends AbstractCedarController {
   protected static Configuration config;

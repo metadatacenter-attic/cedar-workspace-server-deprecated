@@ -26,6 +26,7 @@ import java.util.Map;
 
 public class ResourceController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(ResourceController.class);
+  private static ObjectMapper MAPPER = new ObjectMapper();
 
   public static Result createResource() {
     IAuthRequest frontendRequest = null;
@@ -96,8 +97,7 @@ public class ResourceController extends AbstractFolderServerController {
       }
 
       if (newResource != null) {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode createdResource = mapper.valueToTree(newResource);
+        JsonNode createdResource = MAPPER.valueToTree(newResource);
         String absoluteUrl = routes.ResourceController.findResource(id).absoluteURL(request());
         response().setHeader(HttpConstants.HTTP_HEADER_LOCATION, absoluteUrl);
         return created(createdResource);
@@ -139,8 +139,7 @@ public class ResourceController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode folderNode = mapper.valueToTree(resource);
+        JsonNode folderNode = MAPPER.valueToTree(resource);
         return ok(folderNode);
       }
     } catch (Exception e) {
@@ -209,8 +208,7 @@ public class ResourceController extends AbstractFolderServerController {
         if (updatedFolder == null) {
           return notFound();
         } else {
-          ObjectMapper mapper = new ObjectMapper();
-          JsonNode updatedFolderNode = mapper.valueToTree(updatedFolder);
+          JsonNode updatedFolderNode = MAPPER.valueToTree(updatedFolder);
           return ok(updatedFolderNode);
         }
       }
