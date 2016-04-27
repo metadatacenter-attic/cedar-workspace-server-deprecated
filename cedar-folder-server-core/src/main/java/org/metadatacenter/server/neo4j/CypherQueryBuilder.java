@@ -193,7 +193,7 @@ public class CypherQueryBuilder {
     for (String propertyName : updateFields.keySet()) {
       sb.append("SET resource.").append(buildUpdateAssignment(propertyName));
     }
-    sb.append("RETURN folder");
+    sb.append("RETURN resource");
     return sb.toString();
   }
 

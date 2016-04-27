@@ -290,7 +290,9 @@ public class Neo4JProxy {
   }
 
   void convertNeo4JValues(CedarFSNode r) {
-    r.setId(folderIdPrefix + r.getId());
+    if (r.getType() == CedarNodeType.FOLDER) {
+      r.setId(folderIdPrefix + r.getId());
+    }
   }
 
   String getFolderUUID(String folderId) {
