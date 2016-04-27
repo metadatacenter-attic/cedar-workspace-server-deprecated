@@ -28,28 +28,30 @@ public class CypherParamBuilder {
 
   public static Map<String, Object> createFolder(String parentId, String name, String description, String createdBy,
                                                  Map<String, Object> extraProperties) {
-    return createNode(parentId, CedarNodeType.FOLDER, name, description, createdBy, extraProperties);
-  }
-
-  public static Map<String, Object> createResource(String parentId, CedarNodeType resourceType, String name, String
-      description, String createdBy) {
-    return createResource(parentId, resourceType, name, description, createdBy, null);
-  }
-
-  public static Map<String, Object> createResource(String parentId, CedarNodeType resourceType, String name, String
-      description, String createdBy, Map<String, Object> extraProperties) {
-    return createNode(parentId, resourceType, name, description, createdBy, extraProperties);
-  }
-
-  private static Map<String, Object> createNode(String parentId, CedarNodeType resourceType, String name, String
-      description, String createdBy, Map<String, Object> extraProperties) {
     String nodeId = UUID.randomUUID().toString();
+    return createNode(parentId, nodeId, CedarNodeType.FOLDER, name, description, createdBy, extraProperties);
+  }
+
+  public static Map<String, Object> createResource(String parentId, String childURL, CedarNodeType resourceType,
+                                                   String name, String description, String createdBy) {
+    return createResource(parentId, childURL, resourceType, name, description, createdBy, null);
+  }
+
+  public static Map<String, Object> createResource(String parentId, String childURL, CedarNodeType resourceType,
+                                                   String name, String description, String createdBy, Map<String,
+      Object> extraProperties) {
+    return createNode(parentId, childURL, resourceType, name, description, createdBy, extraProperties);
+  }
+
+  private static Map<String, Object> createNode(String parentId, String childId, CedarNodeType resourceType, String
+      name, String description, String createdBy, Map<String, Object> extraProperties) {
+
     Instant now = Instant.now();
     String nowString = CedarConstants.xsdDateTimeFormatter.format(now);
     String nowTSString = String.valueOf(now.getEpochSecond());
     Map<String, Object> params = new HashMap<>();
     params.put(PARENT_ID, parentId);
-    params.put(ID, nodeId);
+    params.put(ID, childId);
     params.put(NAME, name);
     params.put(DESCRIPTION, description);
     params.put(CREATED_BY, createdBy);

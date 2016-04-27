@@ -55,9 +55,9 @@ public class Neo4JUserSession {
     return neo4JProxy.getFolderUUID(folderId);
   }
 
-  private String getResourceUUID(String resourceId, CedarNodeType resourceType) {
+  /*private String getResourceUUID(String resourceId, CedarNodeType resourceType) {
     return neo4JProxy.getResourceUUID(resourceId, resourceType);
-  }
+  }*/
 
   public CedarFSFolder findFolderById(String folderURL) {
     return neo4JProxy.findFolderById(getFolderUUID(folderURL));
@@ -77,15 +77,15 @@ public class Neo4JUserSession {
         extraProperties);
   }
 
-  public CedarFSResource createResourceAsChildOfId(String parentFolderURL, CedarNodeType resourceType, String name,
-                                                   String description) {
-    return createResourceAsChildOfId(parentFolderURL, resourceType, name, description, null);
+  public CedarFSResource createResourceAsChildOfId(String parentFolderURL, String childURL, CedarNodeType
+      resourceType, String name, String description) {
+    return createResourceAsChildOfId(parentFolderURL, childURL, resourceType, name, description, null);
   }
 
-  public CedarFSResource createResourceAsChildOfId(String parentFolderURL, CedarNodeType resourceType, String name,
-                                                   String description, Map<String, Object> extraProperties) {
-    return neo4JProxy.createResourceAsChildOfId(getFolderUUID(parentFolderURL), resourceType, name, description,
-        getUserId(), extraProperties);
+  public CedarFSResource createResourceAsChildOfId(String parentFolderURL, String childURL, CedarNodeType
+      resourceType, String name, String description, Map<String, Object> extraProperties) {
+    return neo4JProxy.createResourceAsChildOfId(getFolderUUID(parentFolderURL), childURL, resourceType, name,
+        description, getUserId(), extraProperties);
   }
 
   public CedarFSFolder updateFolderById(String folderURL, Map<String, String> updateFields) {
@@ -94,7 +94,7 @@ public class Neo4JUserSession {
 
   public CedarFSResource updateResourceById(String resourceURL, CedarNodeType resourceType, Map<String,
       String> updateFields) {
-    return neo4JProxy.updateResourceById(getResourceUUID(resourceURL, resourceType), updateFields, getUserId());
+    return neo4JProxy.updateResourceById(resourceURL, updateFields, getUserId());
   }
 
   public boolean deleteFolderById(String folderURL) {
@@ -102,7 +102,7 @@ public class Neo4JUserSession {
   }
 
   public boolean deleteResourceById(String resourceURL, CedarNodeType resourceType) {
-    return neo4JProxy.deleteResourceById(getResourceUUID(resourceURL, resourceType));
+    return neo4JProxy.deleteResourceById(resourceURL);
   }
 
   public CedarFSFolder findFolderByPath(String path) {

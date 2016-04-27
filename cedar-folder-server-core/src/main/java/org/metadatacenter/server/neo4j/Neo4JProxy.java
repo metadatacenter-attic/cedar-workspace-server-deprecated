@@ -190,7 +190,8 @@ public class Neo4JProxy {
   CedarFSFolder createFolderAsChildOfId(String parentId, String name, String description, String creatorId, Map<String,
       Object> extraProperties) {
     String cypher = CypherQueryBuilder.createFolderAsChildOfId(extraProperties);
-    Map<String, Object> params = CypherParamBuilder.createFolder(parentId, name, description, creatorId, extraProperties);
+    Map<String, Object> params = CypherParamBuilder.createFolder(parentId, name, description, creatorId,
+        extraProperties);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode newNode = jsonNode.at("/results/0/data/0/row/0");
@@ -198,10 +199,10 @@ public class Neo4JProxy {
   }
 
 
-  CedarFSResource createResourceAsChildOfId(String parentId, CedarNodeType resourceType, String name, String
-      description, String creatorId, Map<String, Object> extraProperties) {
+  CedarFSResource createResourceAsChildOfId(String parentId, String childURL, CedarNodeType resourceType, String
+      name, String description, String creatorId, Map<String, Object> extraProperties) {
     String cypher = CypherQueryBuilder.createResourceAsChildOfId(extraProperties);
-    Map<String, Object> params = CypherParamBuilder.createResource(parentId, resourceType, name, description,
+    Map<String, Object> params = CypherParamBuilder.createResource(parentId, childURL, resourceType, name, description,
         creatorId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);

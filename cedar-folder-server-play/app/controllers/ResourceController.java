@@ -92,7 +92,7 @@ public class ResourceController extends AbstractFolderServerController {
       } else {
         // Later we will guarantee some kind of uniqueness for the resource names
         // Currently we allow duplicate names, the id is the PK
-        newResource = neoSession.createResourceAsChildOfId(parentId, resourceType, name, description);
+        newResource = neoSession.createResourceAsChildOfId(parentId, id, resourceType, name, description);
       }
 
       if (newResource != null) {
@@ -241,7 +241,6 @@ public class ResourceController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        //TODO: fix this
         boolean deleted = neoSession.deleteResourceById(resourceId, CedarNodeType.ELEMENT);
         if (deleted) {
           return noContent();
