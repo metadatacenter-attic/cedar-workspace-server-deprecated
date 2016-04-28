@@ -45,13 +45,39 @@ public class FolderController extends AbstractFolderServerController {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
           (frontendRequest));
 
-      // get path parameter
-      String path = ParameterUtil.getStringOrThrowError(creationRequest, "path",
-          "You must supply the path of the new folder!");
-      // test path syntax
-      String normalizedPath = neoSession.normalizePath(path);
-      if (!normalizedPath.equals(path)) {
-        throw new IllegalArgumentException("You must supply the path of the new folder in normalized form!");
+      String folderId = ParameterUtil.getString(creationRequest, "folderId", "");
+      String path = ParameterUtil.getString(creationRequest, "path", "");
+      if (folderId.isEmpty() && path.isEmpty()) {
+        return badRequest(generateErrorDescription("parentFolderNotSpecified",
+            "You need to supply either path or folderId parameter identifying the parent folder"));
+
+      }
+      if (!folderId.isEmpty() && !path.isEmpty()) {
+        return badRequest(generateErrorDescription("parentFolderSpecifiedTwice",
+            "You need to supply either path or folderId parameter (not both) identifying the parent folder"));
+      }
+
+      CedarFSFolder parentFolder = null;
+
+      String normalizedPath = null;
+      if (!path.isEmpty()) {
+        normalizedPath = neoSession.normalizePath(path);
+        if (!normalizedPath.equals(path)) {
+          throw new IllegalArgumentException("You must supply the path of the new folder in normalized form!");
+        }
+        parentFolder = neoSession.findFolderByPath(path);
+      }
+
+      if (!folderId.isEmpty()) {
+        parentFolder = neoSession.findFolderById(folderId);
+      }
+
+      if (parentFolder == null) {
+        ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+        errorParams.put("path", path);
+        errorParams.put("folderId", folderId);
+        return badRequest(generateErrorDescription("parentNotPresent",
+            "The parent folder is not present!", errorParams));
       }
 
       // get name parameter
@@ -69,27 +95,16 @@ public class FolderController extends AbstractFolderServerController {
 
       // check existence of parent folder
       CedarFSFolder newFolder = null;
-      CedarFSFolder parentFolder = neoSession.findFolderByPath(path);
-      String candidatePath = null;
-      if (parentFolder == null) {
+      CedarFSFolder newFolderCandidate = neoSession.findFolderByParentIdAndName(parentFolder, name);
+      if (newFolderCandidate != null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-        errorParams.put("path", path);
-        return badRequest(generateErrorDescription("parentNotPresent",
-            "The parent folder is not present:" + path, errorParams));
-      } else {
-        candidatePath = neoSession.getChildPath(path, name);
-        CedarFSFolder newFolderCandidate = neoSession.findFolderByPath(candidatePath);
-        if (newFolderCandidate != null) {
-          ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-          errorParams.put("path", path);
-          errorParams.put("name", name);
-          errorParams.put("newFolderPath", candidatePath);
-          return badRequest(generateErrorDescription("folderAlreadyPresent",
-              "There is already a folder with the path:" + candidatePath, errorParams));
-        }
-
-        newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, description);
+        errorParams.put("parentFolderId", parentFolder.getId());
+        errorParams.put("name", name);
+        return badRequest(generateErrorDescription("folderAlreadyPresent",
+            "There is already a folder at the requested location!", errorParams));
       }
+
+      newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, description);
 
       if (newFolder != null) {
         JsonNode createdFolder = MAPPER.valueToTree(newFolder);
@@ -99,10 +114,10 @@ public class FolderController extends AbstractFolderServerController {
       } else {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("path", path);
+        errorParams.put("parentFolderId", parentFolder.getId());
         errorParams.put("name", name);
-        errorParams.put("newFolderPath", candidatePath);
         return badRequest(generateErrorDescription("folderNotCreated",
-            "The folder was not created:" + candidatePath, errorParams));
+            "The folder was not created!", errorParams));
       }
     } catch (IllegalArgumentException e) {
       play.Logger.error("Illegal argument while creating the folder", e);

@@ -21,4 +21,19 @@ public class ParameterUtil {
     }
     return param;
   }
+
+  public static String getString(JsonNode node, String paramName, String defaultValue) {
+    String param = null;
+    JsonNode paramNode = node.get(paramName);
+    if (paramNode != null) {
+      param = paramNode.asText();
+      if (param != null) {
+        param = param.trim();
+      }
+    }
+    if (param == null) {
+      param = defaultValue;
+    }
+    return param;
+  }
 }

@@ -10,6 +10,7 @@ public class CypherQueryBuilder {
   public static final String RELATION_CONTAINS = "CONTAINS";
   public static final String LABEL_FOLDER = "Folder";
   public static final String LABEL_RESOURCE = "Resource";
+  private static String folderByParentIdAndName;
 
   private CypherQueryBuilder() {
   }
@@ -157,6 +158,19 @@ public class CypherQueryBuilder {
     return sb.toString();
   }
 
+
+  public static String getFolderByParentIdAndName() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("MATCH (parent:").append(LABEL_FOLDER).append(" {id:{id} })");
+    sb.append("MATCH (child)");
+    sb.append("MATCH (parent)");
+    sb.append("-[:").append(RELATION_CONTAINS).append("]->");
+    sb.append("(child)");
+    sb.append("WHERE child.name = {name}");
+    sb.append("RETURN child");
+    return sb.toString();
+  }
+
   public static String deleteFolderById() {
     StringBuilder sb = new StringBuilder();
     sb.append("MATCH (folder:").append(LABEL_FOLDER).append(" {id:{id} })");
@@ -206,4 +220,5 @@ public class CypherQueryBuilder {
     sb.append("RETURN path");
     return sb.toString();
   }
+
 }

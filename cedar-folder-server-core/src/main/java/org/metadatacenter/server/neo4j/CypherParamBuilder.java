@@ -3,6 +3,7 @@ package org.metadatacenter.server.neo4j;
 import org.apache.commons.lang3.StringUtils;
 import org.metadatacenter.constant.CedarConstants;
 import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.folderserver.CedarFSFolder;
 
 import java.time.Instant;
 import java.util.*;
@@ -152,6 +153,13 @@ public class CypherParamBuilder {
     Map<String, Object> params = new HashMap<>();
     params.put(NAME, pathUtil.getRootPath());
     params.put(ID, id);
+    return params;
+  }
+
+  public static Map<String, Object> getFolderByParentIdAndName(String parentId, String name) {
+    Map<String, Object> params = new HashMap<>();
+    params.put(ID, parentId);
+    params.put(NAME, name);
     return params;
   }
 }
