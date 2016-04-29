@@ -30,13 +30,14 @@ public class FolderContentsController extends AbstractFolderServerController {
   private static ObjectMapper MAPPER = new ObjectMapper();
 
   final static List<String> knownSortKeys;
-  public static final String DEFAULT_SORT = "name";
+  public static final String DEFAULT_SORT;
 
   static {
+    DEFAULT_SORT = "name";
     knownSortKeys = new ArrayList<>();
     knownSortKeys.add("name");
-    knownSortKeys.add("createdOn");
-    knownSortKeys.add("lastUpdatedOn");
+    knownSortKeys.add("createdOnTS");
+    knownSortKeys.add("lastUpdatedOnTS");
   }
 
   public static Result findFolderContentsByPath(F.Option<String> pathParam, F.Option<String> resourceTypes, F

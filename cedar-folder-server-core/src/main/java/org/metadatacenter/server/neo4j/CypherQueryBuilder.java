@@ -1,6 +1,7 @@
 package org.metadatacenter.server.neo4j;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.metadatacenter.server.neo4j.Neo4JFields.*;
@@ -118,7 +119,7 @@ public class CypherQueryBuilder {
     return sb.toString();
   }
 
-  public static String getFolderContentsLookupQuery() {
+  public static String getFolderContentsLookupQuery(List<String> sortList) {
     StringBuilder sb = new StringBuilder();
     sb.append("MATCH (parent:").append(LABEL_FOLDER).append(" {id:{id} })");
     sb.append("MATCH (child)");
@@ -127,8 +128,36 @@ public class CypherQueryBuilder {
     sb.append("(child)");
     sb.append("WHERE child.resourceType in {resourceTypeList}");
     sb.append("RETURN child");
+    sb.append(" ORDER BY ").append(getOrderByExpression(sortList));
     sb.append(" SKIP {offset}");
     sb.append(" LIMIT {limit}");
+    return sb.toString();
+  }
+
+
+  private static String getOrderByExpression(List<String> sortList) {
+    StringBuilder sb = new StringBuilder();
+    String prefix = "";
+    for(String s : sortList) {
+      sb.append(prefix);
+      sb.append(getOrderByExpression(s));
+      prefix = ", ";
+    };
+    return sb.toString();
+  }
+
+  private static String getOrderByExpression(String s) {
+    StringBuilder sb = new StringBuilder();
+    if (s != null) {
+      sb.append("child.");
+      if (s.startsWith("-")) {
+        sb.append(s.substring(1));
+        sb.append(" DESC");
+      } else {
+        sb.append(s);
+        sb.append(" ASC");
+      }
+    }
     return sb.toString();
   }
 

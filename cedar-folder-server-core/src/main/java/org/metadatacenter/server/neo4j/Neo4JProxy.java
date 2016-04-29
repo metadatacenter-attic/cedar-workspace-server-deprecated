@@ -223,7 +223,7 @@ public class Neo4JProxy {
       limit, int offset, List<String> sortList) {
     List<CedarFSNode> resources = new ArrayList<>();
 
-    String cypher = CypherQueryBuilder.getFolderContentsLookupQuery();
+    String cypher = CypherQueryBuilder.getFolderContentsLookupQuery(sortList);
     Map<String, Object> params = CypherParamBuilder.getFolderContentsLookupParameters(folderId, resourceTypes, limit,
         offset);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
