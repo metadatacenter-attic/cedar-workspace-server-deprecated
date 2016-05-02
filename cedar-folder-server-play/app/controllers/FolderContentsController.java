@@ -132,15 +132,7 @@ public class FolderContentsController extends AbstractFolderServerController {
           none)
           .absoluteURL(request());
 
-      List<CedarFSFolder> pathInfo = null;
-      // in case of the root folder the shortest path won't return the root. We need to add it manually
-      // we test it by the name. A flag could be useful later.
-      if (neoSession.getRootPath().equals(folder.getName())) {
-        pathInfo = new ArrayList<>();
-        pathInfo.add(folder);
-      } else {
-        pathInfo = neoSession.findFolderPathById(id);
-      }
+      List<CedarFSFolder> pathInfo = neoSession.findFolderPath(folder);
 
       return findFolderContents(neoSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
           offsetParam);
@@ -239,7 +231,8 @@ public class FolderContentsController extends AbstractFolderServerController {
 
     r.setRequest(req);
 
-    List<CedarFSNode> resources = neoSession.findFolderContents(folder.getId(), resourceTypeList, limit, offset, sortList);
+    List<CedarFSNode> resources = neoSession.findFolderContents(folder.getId(), resourceTypeList, limit, offset,
+        sortList);
 
     long total = neoSession.findFolderContentsCount(folder.getId(), resourceTypeList);
 

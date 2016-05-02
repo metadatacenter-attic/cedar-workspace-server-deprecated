@@ -115,8 +115,14 @@ public class Neo4JUserSession {
   }
 
 
-  public List<CedarFSFolder> findFolderPathById(String folderURL) {
-    return neo4JProxy.findFolderPathById(getFolderUUID(folderURL));
+  public List<CedarFSFolder> findFolderPath(CedarFSFolder folder) {
+    if (folder.isRoot()) {
+      List<CedarFSFolder> pathInfo = new ArrayList<>();
+      pathInfo.add(folder);
+      return pathInfo;
+    } else {
+      return neo4JProxy.findFolderPathById(getFolderUUID(folder.getId()));
+    }
   }
 
   public List<CedarFSNode> findFolderContents(String folderURL, List<CedarNodeType> resourceTypeList, int
@@ -176,7 +182,7 @@ public class Neo4JUserSession {
 
   public void addPathAndParentId(CedarFSFolder folder) {
     if (folder != null) {
-      List<CedarFSFolder> path = neo4JProxy.findFolderPathById(getFolderUUID(folder.getId()));
+      List<CedarFSFolder> path = findFolderPath(folder);
       if (path != null) {
         folder.setPath(getPathString(path));
         folder.setParentPath(getParentPathString(path));
@@ -208,7 +214,11 @@ public class Neo4JUserSession {
   private String getParentPathString(List<? extends CedarFSNode> path) {
     List<CedarFSNode> p = new ArrayList<>();
     p.addAll(path);
-    p.remove(p.size() - 1);
+    if (path.size() > 0) {
+      p.remove(p.size() - 1);
+    } else {
+      return null;
+    }
     return getPathString(p);
   }
 
@@ -226,6 +236,6 @@ public class Neo4JUserSession {
       }
       sb.append(node.getName());
     }
-    return sb.toString();
+    return sb.length() == 0 ? null : sb.toString();
   }
 }
