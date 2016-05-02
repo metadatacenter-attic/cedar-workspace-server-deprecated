@@ -6,6 +6,7 @@ import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.model.folderserver.CedarFSResource;
 import org.metadatacenter.server.security.model.user.CedarUser;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -54,10 +55,6 @@ public class Neo4JUserSession {
   private String getFolderUUID(String folderId) {
     return neo4JProxy.getFolderUUID(folderId);
   }
-
-  /*private String getResourceUUID(String resourceId, CedarNodeType resourceType) {
-    return neo4JProxy.getResourceUUID(resourceId, resourceType);
-  }*/
 
   public CedarFSFolder findFolderById(String folderURL) {
     return neo4JProxy.findFolderById(getFolderUUID(folderURL));
@@ -177,22 +174,42 @@ public class Neo4JUserSession {
     }
   }
 
-  public String getFolderPathStringById(String folderURL) {
-    List<CedarFSFolder> path = neo4JProxy.findFolderPathById(getFolderUUID(folderURL));
-    if (path != null) {
-      return getPathString(path);
-    } else {
-      return null;
+  public void addPathAndParentId(CedarFSFolder folder) {
+    if (folder != null) {
+      List<CedarFSFolder> path = neo4JProxy.findFolderPathById(getFolderUUID(folder.getId()));
+      if (path != null) {
+        folder.setPath(getPathString(path));
+        folder.setParentPath(getParentPathString(path));
+        folder.setParentFolderId(getParentId(path));
+      }
     }
   }
 
-  public String getNodePathStringById(String resourceId) {
-    List<CedarFSNode> path = neo4JProxy.findNodePathById(resourceId);
-    if (path != null) {
-      return getPathString(path);
-    } else {
-      return null;
+  public void addPathAndParentId(CedarFSResource resource) {
+    if (resource != null) {
+      List<CedarFSNode> path = neo4JProxy.findNodePathById(resource.getId());
+      if (path != null) {
+        resource.setPath(getPathString(path));
+        resource.setParentPath(getParentPathString(path));
+        resource.setParentFolderId(getParentId(path));
+      }
     }
+  }
+
+  private String getParentId(List<? extends CedarFSNode> path) {
+    if (path != null) {
+      if (path.size() > 1) {
+        return path.get(path.size() - 2).getId();
+      }
+    }
+    return null;
+  }
+
+  private String getParentPathString(List<? extends CedarFSNode> path) {
+    List<CedarFSNode> p = new ArrayList<>();
+    p.addAll(path);
+    p.remove(p.size() - 1);
+    return getPathString(p);
   }
 
   private String getPathString(List<? extends CedarFSNode> path) {

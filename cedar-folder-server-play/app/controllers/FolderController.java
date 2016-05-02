@@ -20,7 +20,6 @@ import play.mvc.Result;
 import utils.DataServices;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class FolderController extends AbstractFolderServerController {
@@ -150,7 +149,8 @@ public class FolderController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        folder.setPath(neoSession.getFolderPathStringById(folderId));
+
+        neoSession.addPathAndParentId(folder);
         JsonNode folderNode = MAPPER.valueToTree(folder);
         return ok(folderNode);
       }
