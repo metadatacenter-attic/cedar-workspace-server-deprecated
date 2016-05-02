@@ -148,6 +148,28 @@ public class Neo4JProxy {
     return pathList;
   }
 
+  List<CedarFSNode> findNodePathById(String id) {
+    List<CedarFSNode> pathList = new ArrayList<>();
+    String cypher = CypherQueryBuilder.getNodeLookupQueryById();
+    Map<String, Object> params = CypherParamBuilder.getNodeLookupByIDParameters(pathUtil, id);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode pathListJsonNode = jsonNode.at("/results/0/data/0/row/0");
+    if (pathListJsonNode != null && !pathListJsonNode.isMissingNode()) {
+      pathListJsonNode.forEach(f -> {
+        // relationships are also included, filter them out
+        Map pathElement = buildMap(f);
+        if (pathElement != null && !pathElement.isEmpty()) {
+          CedarFSNode cf = buildNode(f);
+          if (cf != null) {
+            pathList.add(cf);
+          }
+        }
+      });
+    }
+    return pathList;
+  }
+
   CedarFSFolder findFolderByPath(String path) {
     List<CedarFSFolder> folderPath = findFolderPathByPath(path);
     if (folderPath != null && folderPath.size() > 0) {
@@ -187,6 +209,7 @@ public class Neo4JProxy {
   CedarFSFolder createRootFolder(String creatorId) {
     Map<String, Object> extraParams = new HashMap<>();
     extraParams.put("isRoot", true);
+    extraParams.put("isSystem", true);
     String cypher = CypherQueryBuilder.createRootFolder(extraParams);
     Map<String, Object> params = CypherParamBuilder.createFolder(null, config.getRootFolderPath(), config
         .getRootFolderDescription(), creatorId, extraParams);
@@ -241,9 +264,22 @@ public class Neo4JProxy {
     return resources;
   }
 
-  public long findFolderContentsCount(String folderId, List<CedarNodeType> resourceTypeList) {
+  public long findFolderContentsFilteredCount(String folderId, List<CedarNodeType> resourceTypeList) {
+    String cypher = CypherQueryBuilder.getFolderContentsFilteredCountQuery();
+    Map<String, Object> params = CypherParamBuilder.getFolderContentsFilteredCountParameters(folderId, resourceTypeList);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode countNode = jsonNode.at("/results/0/data/0/row/0");
+    if (countNode != null && !countNode.isMissingNode()) {
+      return countNode.asLong();
+    } else {
+      return -1;
+    }
+  }
+
+  public long findFolderContentsCount(String folderId) {
     String cypher = CypherQueryBuilder.getFolderContentsCountQuery();
-    Map<String, Object> params = CypherParamBuilder.getFolderContentsCountParameters(folderId, resourceTypeList);
+    Map<String, Object> params = CypherParamBuilder.getFolderContentsCountParameters(folderId);
     CypherQuery q = new CypherQueryWithParameters(cypher, params);
     JsonNode jsonNode = executeCypherQueryAndCommit(q);
     JsonNode countNode = jsonNode.at("/results/0/data/0/row/0");

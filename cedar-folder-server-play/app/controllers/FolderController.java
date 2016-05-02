@@ -20,6 +20,7 @@ import play.mvc.Result;
 import utils.DataServices;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class FolderController extends AbstractFolderServerController {
@@ -149,6 +150,7 @@ public class FolderController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
+        folder.setPath(neoSession.getFolderPathStringById(folderId));
         JsonNode folderNode = MAPPER.valueToTree(folder);
         return ok(folderNode);
       }
@@ -257,15 +259,31 @@ public class FolderController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        // TODO: check folder contents, if not, delete only if "?force=true" param is present
-        boolean deleted = neoSession.deleteFolderById(folderId);
-        if (deleted) {
-          return noContent();
-        } else {
+        if (folder.isSystem()) {
           ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
           errorParams.put("id", folderId);
-          return internalServerErrorWithError(generateErrorDescription("folderNotDeleted",
-              "The folder can not be delete by id:" + folderId, errorParams));
+          errorParams.put("folderType", "system");
+          return badRequest(generateErrorDescription("folderCanNotBeDeleted",
+              "System folders can not be deleted", errorParams));
+        } else {
+          long contentCount = neoSession.findFolderContentsCount(folder.getId());
+          if (contentCount > 0) {
+            ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+            errorParams.put("id", folderId);
+            errorParams.put("count", "contentCount");
+            return badRequest(generateErrorDescription("folderCanNotBeDeleted",
+                "Non-empty folders can not be deleted", errorParams));
+          }
+          boolean deleted = neoSession.deleteFolderById(folderId);
+          if (deleted) {
+            return noContent();
+          } else {
+            // TODO: check folder contents, if not, delete only if "?force=true" param is present
+            ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+            errorParams.put("id", folderId);
+            return internalServerErrorWithError(generateErrorDescription("folderNotDeleted",
+                "The folder can not be delete by id:" + folderId, errorParams));
+          }
         }
       }
     } catch (Exception e) {

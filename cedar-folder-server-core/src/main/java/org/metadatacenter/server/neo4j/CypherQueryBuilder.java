@@ -161,7 +161,7 @@ public class CypherQueryBuilder {
     return sb.toString();
   }
 
-  public static String getFolderContentsCountQuery() {
+  public static String getFolderContentsFilteredCountQuery() {
     StringBuilder sb = new StringBuilder();
     sb.append("MATCH (parent:").append(LABEL_FOLDER).append(" {id:{id} })");
     sb.append("MATCH (child)");
@@ -169,6 +169,17 @@ public class CypherQueryBuilder {
     sb.append("-[:").append(RELATION_CONTAINS).append("]->");
     sb.append("(child)");
     sb.append("WHERE child.resourceType in {resourceTypeList}");
+    sb.append("RETURN count(child)");
+    return sb.toString();
+  }
+
+  public static String getFolderContentsCountQuery() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("MATCH (parent:").append(LABEL_FOLDER).append(" {id:{id} })");
+    sb.append("MATCH (child)");
+    sb.append("MATCH (parent)");
+    sb.append("-[:").append(RELATION_CONTAINS).append("]->");
+    sb.append("(child)");
     sb.append("RETURN count(child)");
     return sb.toString();
   }
@@ -245,6 +256,16 @@ public class CypherQueryBuilder {
     sb.append("MATCH");
     sb.append("(root:").append(LABEL_FOLDER).append(" {name:{name} })").append(",");
     sb.append("(current:").append(LABEL_FOLDER).append(" {id:{id} })").append(",");
+    sb.append("path=shortestPath((root)-[:").append(RELATION_CONTAINS).append("*]->(current))");
+    sb.append("RETURN path");
+    return sb.toString();
+  }
+
+  public static String getNodeLookupQueryById() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("MATCH");
+    sb.append("(root:").append(LABEL_FOLDER).append(" {name:{name} })").append(",");
+    sb.append("(current {id:{id} })").append(",");
     sb.append("path=shortestPath((root)-[:").append(RELATION_CONTAINS).append("*]->(current))");
     sb.append("RETURN path");
     return sb.toString();

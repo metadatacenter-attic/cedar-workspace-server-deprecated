@@ -91,13 +91,19 @@ public class CypherParamBuilder {
     return params;
   }
 
-  public static Map<String, Object> getFolderContentsCountParameters(String folderId, Collection<CedarNodeType>
+  public static Map<String, Object> getFolderContentsFilteredCountParameters(String folderId, Collection<CedarNodeType>
       resourceTypes) {
     Map<String, Object> params = new HashMap<>();
     params.put(ID, folderId);
     List<String> rtl = new ArrayList<>();
     resourceTypes.forEach(cnt -> rtl.add(cnt.getValue()));
     params.put("resourceTypeList", rtl);
+    return params;
+  }
+
+  public static Map<String, Object> getFolderContentsCountParameters(String folderId) {
+    Map<String, Object> params = new HashMap<>();
+    params.put(ID, folderId);
     return params;
   }
 
@@ -150,6 +156,13 @@ public class CypherParamBuilder {
   }
 
   public static Map<String, Object> getFolderLookupByIDParameters(IPathUtil pathUtil, String id) {
+    Map<String, Object> params = new HashMap<>();
+    params.put(NAME, pathUtil.getRootPath());
+    params.put(ID, id);
+    return params;
+  }
+
+  public static Map<String, Object> getNodeLookupByIDParameters(IPathUtil pathUtil, String id) {
     Map<String, Object> params = new HashMap<>();
     params.put(NAME, pathUtil.getRootPath());
     params.put(ID, id);

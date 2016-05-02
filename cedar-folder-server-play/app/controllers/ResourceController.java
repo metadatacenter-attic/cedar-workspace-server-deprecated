@@ -139,6 +139,7 @@ public class ResourceController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
+        resource.setPath(neoSession.getNodePathStringById(resourceId));
         JsonNode folderNode = MAPPER.valueToTree(resource);
         return ok(folderNode);
       }

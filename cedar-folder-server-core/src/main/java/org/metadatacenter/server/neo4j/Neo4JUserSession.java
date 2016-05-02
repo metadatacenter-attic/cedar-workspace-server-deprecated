@@ -47,7 +47,7 @@ public class Neo4JUserSession {
     return neo4JProxy.getPathUtil().getRootPath();
   }
 
-  // Expose methods of NEo4JProxy
+  // Expose methods of Neo4JProxy
   // Convert folderId from URL style into internal representation
   // Other resource ids should not be converted
   // Add user info to calls
@@ -127,8 +127,12 @@ public class Neo4JUserSession {
     return neo4JProxy.findFolderContents(getFolderUUID(folderURL), resourceTypeList, limit, offset, sortList);
   }
 
+  public long findFolderContentsCount(String folderURL) {
+    return neo4JProxy.findFolderContentsCount(getFolderUUID(folderURL));
+  }
+
   public long findFolderContentsCount(String folderURL, List<CedarNodeType> resourceTypeList) {
-    return neo4JProxy.findFolderContentsCount(getFolderUUID(folderURL), resourceTypeList);
+    return neo4JProxy.findFolderContentsFilteredCount(getFolderUUID(folderURL), resourceTypeList);
   }
 
   public void ensureGlobalObjectsExists() {
@@ -144,13 +148,17 @@ public class Neo4JUserSession {
     }
     CedarFSFolder usersFolder = findFolderByPath(config.getUsersFolderPath());
     if (usersFolder == null) {
+      Map<String, Object> extraParams = new HashMap<>();
+      extraParams.put("isSystem", true);
       usersFolder = createFolderAsChildOfId(rootFolderURL, pathUtil.extractName(config.getUsersFolderPath()), config
-          .getUsersFolderDescription());
+          .getUsersFolderDescription(), extraParams);
     }
     CedarFSFolder lostAndFoundFolder = findFolderByPath(config.getLostAndFoundFolderPath());
     if (lostAndFoundFolder == null) {
+      Map<String, Object> extraParams = new HashMap<>();
+      extraParams.put("isSystem", true);
       lostAndFoundFolder = createFolderAsChildOfId(rootFolderURL, pathUtil.extractName(config
-          .getLostAndFoundFolderPath()), config.getLostAndFoundFolderDescription());
+          .getLostAndFoundFolderPath()), config.getLostAndFoundFolderDescription(), extraParams);
     }
   }
 
@@ -164,8 +172,43 @@ public class Neo4JUserSession {
       // usersFolder should not be null at this point. If it is, we let the NPE to be thrown
       Map<String, Object> extraParams = new HashMap<>();
       extraParams.put("isUserHome", true);
+      extraParams.put("isSystem", true);
       currentUserHomeFolder = createFolderAsChildOfId(usersFolder.getId(), cu.getUserId(), "", extraParams);
     }
   }
 
+  public String getFolderPathStringById(String folderURL) {
+    List<CedarFSFolder> path = neo4JProxy.findFolderPathById(getFolderUUID(folderURL));
+    if (path != null) {
+      return getPathString(path);
+    } else {
+      return null;
+    }
+  }
+
+  public String getNodePathStringById(String resourceId) {
+    List<CedarFSNode> path = neo4JProxy.findNodePathById(resourceId);
+    if (path != null) {
+      return getPathString(path);
+    } else {
+      return null;
+    }
+  }
+
+  private String getPathString(List<? extends CedarFSNode> path) {
+    StringBuilder sb = new StringBuilder();
+    boolean addSeparator = false;
+    for (CedarFSNode node : path) {
+      if (addSeparator) {
+        sb.append(neo4JProxy.getPathUtil().getSeparator());
+      }
+      if (node instanceof CedarFSFolder) {
+        if (!((CedarFSFolder) node).isRoot()) {
+          addSeparator = true;
+        }
+      }
+      sb.append(node.getName());
+    }
+    return sb.toString();
+  }
 }
