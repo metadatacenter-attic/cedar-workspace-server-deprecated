@@ -14,6 +14,7 @@ import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
 import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
+import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +44,10 @@ public class FolderContentsController extends AbstractFolderServerController {
   public static Result findFolderContentsByPath(F.Option<String> pathParam, F.Option<String> resourceTypes, F
       .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while creating the folder", e);
       return forbiddenWithError(e);
@@ -65,8 +67,7 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You need to specify path as a request parameter!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       String normalizedPath = neoSession.normalizePath(path);
       if (!normalizedPath.equals(path)) {
@@ -101,9 +102,10 @@ public class FolderContentsController extends AbstractFolderServerController {
   public static Result findFolderContentsById(String id, F.Option<String> resourceTypes, F.Option<String>
       sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while creating the folder", e);
       return forbiddenWithError(e);
@@ -118,8 +120,7 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You need to specify id as a request parameter!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       CedarFSFolder folder = neoSession.findFolderById(id);
       if (folder == null) {

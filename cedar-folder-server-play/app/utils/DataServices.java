@@ -1,5 +1,6 @@
 package utils;
 
+import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import org.metadatacenter.constant.ConfigConstants;
 import org.metadatacenter.server.neo4j.Neo4JProxy;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
@@ -7,8 +8,12 @@ import org.metadatacenter.server.neo4j.Neo4jConfig;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.server.service.UserService;
 import org.metadatacenter.server.service.mongodb.UserServiceMongoDB;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import play.Configuration;
 import play.Play;
+
+import java.io.IOException;
 
 import static org.metadatacenter.constant.ConfigConstants.*;
 
@@ -17,6 +22,7 @@ public class DataServices {
   private static DataServices instance = new DataServices();
   private static UserService userService;
   private static Neo4JProxy neo4JProxy;
+  private static Logger log = LoggerFactory.getLogger(DataServices.class);
 
 
   public static DataServices getInstance() {
@@ -43,10 +49,19 @@ public class DataServices {
         (ConfigConstants.LINKED_DATA_ID_PATH_SUFFIX_FOLDERS);
     neo4JProxy = new Neo4JProxy(nc, folderIdPrefix);
 
-    CedarUser fakeAdminUser = new CedarUser();
-    fakeAdminUser.setUserId(config.getString(NEO4J_ADMIN_USER_UUID));
+    CedarUser adminUser = null;
+    String userId = null;
+    try {
+      userId = config.getString(USER_ADMIN_USER_UUID);
+      adminUser = userService.findUser(userId);
+    } catch (Exception ex) {
+      log.error("Error while loading admin user for id:" + userId + ":");
+    }
+    if (adminUser == null) {
+      log.warn("Admin user not found for id:" + userId + ":");
+    }
 
-    Neo4JUserSession neo4JSession = getNeo4JSession(fakeAdminUser, false);
+    Neo4JUserSession neo4JSession = getNeo4JSession(adminUser, false);
     neo4JSession.ensureGlobalObjectsExists();
   }
 

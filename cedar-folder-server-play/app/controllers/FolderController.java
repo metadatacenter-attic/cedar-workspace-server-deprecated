@@ -28,9 +28,10 @@ public class FolderController extends AbstractFolderServerController {
 
   public static Result createFolder() {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.FOLDER_CREATE);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.FOLDER_CREATE);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while creating the folder", e);
       return forbiddenWithError(e);
@@ -42,8 +43,7 @@ public class FolderController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       String folderId = ParameterUtil.getString(creationRequest, "folderId", "");
       String path = ParameterUtil.getString(creationRequest, "path", "");
@@ -130,17 +130,17 @@ public class FolderController extends AbstractFolderServerController {
 
   public static Result findFolder(String folderId) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.FOLDER_READ);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.FOLDER_READ);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while reading the folder", e);
       return forbiddenWithError(e);
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       CedarFSFolder folder = neoSession.findFolderById(folderId);
       if (folder == null) {
@@ -162,9 +162,10 @@ public class FolderController extends AbstractFolderServerController {
 
   public static Result updateFolder(String folderId) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.FOLDER_UPDATE);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.FOLDER_UPDATE);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while updating the folder", e);
       return forbiddenWithError(e);
@@ -176,8 +177,7 @@ public class FolderController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       String name = null;
       JsonNode nameNode = folderUpdateRequest.get("name");
@@ -223,7 +223,6 @@ public class FolderController extends AbstractFolderServerController {
         if (name != null) {
           updateFields.put("name", name);
         }
-        CedarUser cu = Authorization.getAccountInfo(frontendRequest);
         CedarFSFolder updatedFolder = neoSession.updateFolderById(folderId, updateFields);
         if (updatedFolder == null) {
           return notFound();
@@ -240,17 +239,17 @@ public class FolderController extends AbstractFolderServerController {
 
   public static Result deleteFolder(String folderId) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.FOLDER_DELETE);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.FOLDER_DELETE);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while deleting the folder", e);
       return forbiddenWithError(e);
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       CedarFSFolder folder = neoSession.findFolderById(folderId);
       if (folder == null) {
