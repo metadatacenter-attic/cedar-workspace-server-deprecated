@@ -155,7 +155,7 @@ public class ResourceController extends AbstractFolderServerController {
       if (limitParam.get() <= 0) {
         throw new IllegalArgumentException("You should specify a positive limit!");
       } else if (limitParam.get() > maxAllowedLimit) {
-        throw new IllegalArgumentException("You should specify a limit smaller than 1000!");
+        throw new IllegalArgumentException("You should specify a limit smaller than " + maxAllowedLimit + "!");
       }
       limit = limitParam.get();
     }
