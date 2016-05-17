@@ -134,6 +134,22 @@ public class CypherQueryBuilder {
     return sb.toString();
   }
 
+  public static String getAllNodesLookupQuery(List<String> sortList) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("MATCH (child)");
+    sb.append(" RETURN child");
+    sb.append(" ORDER BY ").append(getOrderByExpression(sortList));
+    sb.append(" SKIP {offset}");
+    sb.append(" LIMIT {limit}");
+    return sb.toString();
+  }
+
+  public static String getAllNodesCountQuery() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("MATCH (nodes)");
+    sb.append(" RETURN count(nodes)");
+    return sb.toString();
+  }
 
   private static String getOrderByExpression(List<String> sortList) {
     StringBuilder sb = new StringBuilder();

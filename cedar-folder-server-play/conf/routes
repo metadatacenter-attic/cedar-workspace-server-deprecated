@@ -3,27 +3,29 @@
 # ~~~~
 
 # Home page
-GET            /                       controllers.MainFolderServerController.index()
+GET            /                            controllers.MainFolderServerController.index()
 
 # Folder contents
-GET            /folders/contents       controllers.FolderContentsController.findFolderContentsByPath(path: play.libs.F.Option[String], resource_types: play.libs.F.Option[String], sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
-GET            /folders/:id/contents   controllers.FolderContentsController.findFolderContentsById(id: String, resource_types: play.libs.F.Option[String], sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
+GET            /folders/contents            controllers.FolderContentsController.findFolderContentsByPath(path: play.libs.F.Option[String], resource_types: play.libs.F.Option[String], sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
+GET            /folders/:id/contents        controllers.FolderContentsController.findFolderContentsById(id: String, resource_types: play.libs.F.Option[String], sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
 
 # Folders
-POST           /folders                controllers.FolderController.createFolder()
-GET            /folders/:id            controllers.FolderController.findFolder(id: String)
-PUT            /folders/:id            controllers.FolderController.updateFolder(id: String)
-DELETE         /folders/:id            controllers.FolderController.deleteFolder(id: String)
+POST           /folders                     controllers.FolderController.createFolder()
+GET            /folders/:id                 controllers.FolderController.findFolder(id: String)
+PUT            /folders/:id                 controllers.FolderController.updateFolder(id: String)
+DELETE         /folders/:id                 controllers.FolderController.deleteFolder(id: String)
 
 # Resources
-POST           /resources              controllers.ResourceController.createResource()
-GET            /resources/:id          controllers.ResourceController.findResource(id: String)
-PUT            /resources/:id          controllers.ResourceController.updateResource(id: String)
-DELETE         /resources/:id          controllers.ResourceController.deleteResource(id: String)
+POST           /resources                   controllers.ResourceController.createResource()
+GET            /resources/:id               controllers.ResourceController.findResource(id: String)
+PUT            /resources/:id               controllers.ResourceController.updateResource(id: String)
+DELETE         /resources/:id               controllers.ResourceController.deleteResource(id: String)
 
+# Nodes (Folders + Resources)
+GET            /nodes                       controllers.ResourceController.findAllNodes(sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
 
 # For CORS - preflight request
-OPTIONS        /*all                   controllers.MainFolderServerController.preflight(all)
+OPTIONS        /*all                        controllers.MainFolderServerController.preflight(all)
 
 ## Map static resources from the /public folder to the /assets URL path
-GET            /assets/*file           controllers.Assets.at(path="/public", file)
+GET            /assets/*file                controllers.Assets.at(path="/public", file)

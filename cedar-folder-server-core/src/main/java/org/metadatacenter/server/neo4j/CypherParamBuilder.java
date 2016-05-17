@@ -79,6 +79,13 @@ public class CypherParamBuilder {
     return folderNames;
   }
 
+  public static Map<String, Object> getAllNodesLookupParameters(int limit, int offset) {
+    Map<String, Object> params = new HashMap<>();
+    params.put("limit", limit);
+    params.put("offset", offset);
+    return params;
+  }
+
   public static Map<String, Object> getFolderContentsLookupParameters(String folderId, Collection<CedarNodeType>
       resourceTypes, int limit, int offset) {
     Map<String, Object> params = new HashMap<>();

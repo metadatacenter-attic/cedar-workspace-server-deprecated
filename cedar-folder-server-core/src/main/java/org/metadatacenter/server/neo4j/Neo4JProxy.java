@@ -206,6 +206,38 @@ public class Neo4JProxy {
     return buildResource(resourceNode);
   }
 
+  List<CedarFSNode> findAllNodes(int limit, int offset, List<String> sortList) {
+    List<CedarFSNode> resources = new ArrayList<>();
+    String cypher = CypherQueryBuilder.getAllNodesLookupQuery(sortList);
+    Map<String, Object> params = CypherParamBuilder.getAllNodesLookupParameters(limit, offset);
+    CypherQuery q = new CypherQueryWithParameters(cypher, params);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+
+    JsonNode resourceListJsonNode = jsonNode.at("/results/0/data");
+    if (resourceListJsonNode != null && !resourceListJsonNode.isMissingNode()) {
+      resourceListJsonNode.forEach(f -> {
+        JsonNode nodeNode = f.at("/row/0");
+        CedarFSNode cf = buildNode(nodeNode);
+        if (cf != null) {
+          resources.add(cf);
+        }
+      });
+    }
+    return resources;
+  }
+
+  public long findAllNodesCount() {
+    String cypher = CypherQueryBuilder.getAllNodesCountQuery();
+    CypherQuery q = new CypherQueryLiteral(cypher);
+    JsonNode jsonNode = executeCypherQueryAndCommit(q);
+    JsonNode countNode = jsonNode.at("/results/0/data/0/row/0");
+    if (countNode != null && !countNode.isMissingNode()) {
+      return countNode.asLong();
+    } else {
+      return -1;
+    }
+  }
+
   CedarFSFolder createRootFolder(String creatorId) {
     Map<String, Object> extraParams = new HashMap<>();
     extraParams.put("isRoot", true);
