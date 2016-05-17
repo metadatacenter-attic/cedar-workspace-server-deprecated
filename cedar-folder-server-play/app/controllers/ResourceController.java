@@ -14,6 +14,7 @@ import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
 import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
+import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.server.util.ParameterUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +31,10 @@ public class ResourceController extends AbstractFolderServerController {
 
   public static Result createResource() {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while creating the resource", e);
       return forbiddenWithError(e);
@@ -44,8 +46,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       // get parentId
       String parentId = ParameterUtil.getStringOrThrowError(creationRequest, "parentId",
@@ -120,17 +121,17 @@ public class ResourceController extends AbstractFolderServerController {
 
   public static Result findResource(String resourceId) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while reading the resource", e);
       return forbiddenWithError(e);
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       CedarFSResource resource = neoSession.findResourceById(resourceId);
       if (resource == null) {
@@ -151,9 +152,10 @@ public class ResourceController extends AbstractFolderServerController {
 
   public static Result updateResource(String resourceId) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while updating the resource", e);
       return forbiddenWithError(e);
@@ -165,8 +167,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       String name = null;
       JsonNode nameNode = folderUpdateRequest.get("name");
@@ -221,17 +222,17 @@ public class ResourceController extends AbstractFolderServerController {
 
   public static Result deleteResource(String resourceId) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while deleting the resource", e);
       return forbiddenWithError(e);
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       CedarFSResource resource = neoSession.findResourceById(resourceId);
       if (resource == null) {
