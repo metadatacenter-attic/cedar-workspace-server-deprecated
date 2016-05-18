@@ -7,7 +7,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
+import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.model.folderserver.CedarFSResource;
+import org.metadatacenter.model.request.NodeListRequest;
+import org.metadatacenter.model.response.FSNodeListResponse;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
@@ -16,18 +19,29 @@ import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.server.util.ParameterUtil;
+import org.metadatacenter.util.http.LinkHeaderUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import play.libs.F;
 import play.mvc.Result;
 import utils.DataServices;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class ResourceController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(ResourceController.class);
   private static ObjectMapper MAPPER = new ObjectMapper();
+
+  final static List<String> knownSortKeys;
+  public static final String DEFAULT_SORT;
+
+  static {
+    DEFAULT_SORT = "name";
+    knownSortKeys = new ArrayList<>();
+    knownSortKeys.add("name");
+    knownSortKeys.add("createdOnTS");
+    knownSortKeys.add("lastUpdatedOnTS");
+  }
 
   public static Result createResource() {
     IAuthRequest frontendRequest = null;
@@ -117,6 +131,77 @@ public class ResourceController extends AbstractFolderServerController {
       play.Logger.error("Error while creating the resource", e);
       return internalServerErrorWithError(e);
     }
+  }
+
+  public static Result findAllNodes(F.Option<String> sortParam, F.Option<Integer> limitParam, F.Option<Integer>
+      offsetParam) {
+    IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
+    try {
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
+    } catch (CedarAccessException e) {
+      play.Logger.error("Access Error while retrieving all resources", e);
+      return forbiddenWithError(e);
+    }
+
+    F.Option<Integer> none = new F.None<>();
+    String absoluteUrl = routes.ResourceController.findAllNodes(sortParam, none, none).absoluteURL(request());
+
+    // TODO : set default values for input parameters from config
+    int limit = 50;
+    int maxAllowedLimit = 1000;
+    int offset = 0;
+
+    // Input parameter validation: 'limit'
+    if (limitParam.isDefined()) {
+      if (limitParam.get() <= 0) {
+        throw new IllegalArgumentException("You should specify a positive limit!");
+      } else if (limitParam.get() > maxAllowedLimit) {
+        throw new IllegalArgumentException("You should specify a limit smaller than " + maxAllowedLimit + "!");
+      }
+      limit = limitParam.get();
+    }
+    // Input parameter validation: 'offset'
+    if (offsetParam.isDefined()) {
+      if (offsetParam.get() < 0) {
+        throw new IllegalArgumentException("You should specify a positive or zero offset!");
+      }
+      offset = offsetParam.get();
+    }
+    // Input parameter validation: 'sort'
+    List<String> sortList = new ArrayList<>();
+    if (sortParam.isDefined()) {
+      sortList = Arrays.asList(sortParam.get().split("\\s*,\\s*"));
+      for (String s : sortList) {
+        if (!knownSortKeys.contains(s) && !knownSortKeys.contains("-" + s)) {
+          throw new IllegalArgumentException("You passed an illegal sort type: '" + s + "'. The allowed values are:" +
+              knownSortKeys);
+        }
+      }
+    } else {
+      sortList.add(DEFAULT_SORT);
+    }
+
+    Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+
+    // Retrieve all resources
+    List<CedarFSNode> resources = neoSession.findAllNodes(limit, offset, sortList);
+
+    // Build response
+    FSNodeListResponse r = new FSNodeListResponse();
+    NodeListRequest req = new NodeListRequest();
+    req.setLimit(limit);
+    req.setOffset(offset);
+    req.setSort(sortList);
+    r.setRequest(req);
+    long total = neoSession.findAllNodesCount();
+    r.setTotalCount(total);
+    r.setCurrentOffset(offset);
+    r.setResources(resources);
+    r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
+    JsonNode resp = MAPPER.valueToTree(r);
+    return ok(resp);
   }
 
   public static Result findResource(String resourceId) {

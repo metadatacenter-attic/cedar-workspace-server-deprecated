@@ -60,6 +60,14 @@ public class Neo4JUserSession {
     return neo4JProxy.findFolderById(getFolderUUID(folderURL));
   }
 
+  public List<CedarFSNode> findAllNodes(int limit, int offset, List<String> sortList) {
+    return neo4JProxy.findAllNodes(limit, offset, sortList);
+  }
+
+  public long findAllNodesCount() {
+    return neo4JProxy.findAllNodesCount();
+  }
+
   public CedarFSResource findResourceById(String resourceURL) {
     return neo4JProxy.findResourceById(resourceURL);
   }
