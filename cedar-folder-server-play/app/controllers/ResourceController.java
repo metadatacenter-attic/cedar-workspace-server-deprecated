@@ -133,11 +133,13 @@ public class ResourceController extends AbstractFolderServerController {
     }
   }
 
-  public static Result findAllNodes(F.Option<String> sortParam, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
+  public static Result findAllNodes(F.Option<String> sortParam, F.Option<Integer> limitParam, F.Option<Integer>
+      offsetParam) {
     IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      Authorization.mustHavePermission(frontendRequest, CedarPermission.JUST_AUTHORIZED);
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
       play.Logger.error("Access Error while retrieving all resources", e);
       return forbiddenWithError(e);
@@ -172,40 +174,34 @@ public class ResourceController extends AbstractFolderServerController {
     if (sortParam.isDefined()) {
       sortList = Arrays.asList(sortParam.get().split("\\s*,\\s*"));
       for (String s : sortList) {
-          if (!knownSortKeys.contains(s) && !knownSortKeys.contains("-" + s)) {
-            throw new IllegalArgumentException("You passed an illegal sort type: '" + s + "'. The allowed values are:" +
-                knownSortKeys);
-          }
+        if (!knownSortKeys.contains(s) && !knownSortKeys.contains("-" + s)) {
+          throw new IllegalArgumentException("You passed an illegal sort type: '" + s + "'. The allowed values are:" +
+              knownSortKeys);
+        }
       }
     } else {
       sortList.add(DEFAULT_SORT);
     }
 
-    try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(Authorization.getAccountInfo
-          (frontendRequest));
+    Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      // Retrieve all resources
-      List<CedarFSNode> resources = neoSession.findAllNodes(limit, offset, sortList);
+    // Retrieve all resources
+    List<CedarFSNode> resources = neoSession.findAllNodes(limit, offset, sortList);
 
-      // Build response
-      FSNodeListResponse r = new FSNodeListResponse();
-      NodeListRequest req = new NodeListRequest();
-      req.setLimit(limit);
-      req.setOffset(offset);
-      req.setSort(sortList);
-      r.setRequest(req);
-      long total = neoSession.findAllNodesCount();
-      r.setTotalCount(total);
-      r.setCurrentOffset(offset);
-      r.setResources(resources);
-      r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
-      JsonNode resp = MAPPER.valueToTree(r);
-      return ok(resp);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Error while retrieving all resources", e);
-      return internalServerErrorWithError(e);
-    }
+    // Build response
+    FSNodeListResponse r = new FSNodeListResponse();
+    NodeListRequest req = new NodeListRequest();
+    req.setLimit(limit);
+    req.setOffset(offset);
+    req.setSort(sortList);
+    r.setRequest(req);
+    long total = neoSession.findAllNodesCount();
+    r.setTotalCount(total);
+    r.setCurrentOffset(offset);
+    r.setResources(resources);
+    r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
+    JsonNode resp = MAPPER.valueToTree(r);
+    return ok(resp);
   }
 
   public static Result findResource(String resourceId) {
