@@ -173,7 +173,7 @@ public class Neo4JUserSession {
     }
   }
 
-  public void ensureUserHomeExists() {
+  public CedarFSFolder ensureUserHomeExists() {
     Neo4jConfig config = neo4JProxy.getConfig();
     IPathUtil pathUtil = neo4JProxy.getPathUtil();
     String userHomePath = config.getUsersFolderPath() + pathUtil.getSeparator() + cu.getUserId();
@@ -185,7 +185,11 @@ public class Neo4JUserSession {
       extraParams.put("isUserHome", true);
       extraParams.put("isSystem", true);
       currentUserHomeFolder = createFolderAsChildOfId(usersFolder.getId(), cu.getUserId(), "", extraParams);
+      if (currentUserHomeFolder != null) {
+        return currentUserHomeFolder;
+      }
     }
+    return null;
   }
 
   public void addPathAndParentId(CedarFSFolder folder) {
