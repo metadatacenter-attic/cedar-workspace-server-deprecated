@@ -1,9 +1,6 @@
 package utils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.ConfigConstants;
-import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.server.neo4j.Neo4JProxy;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.Neo4jConfig;
@@ -56,6 +53,6 @@ public class DataServices {
   }
 
   public Neo4JUserSession getNeo4JSession(CedarUser currentUser) {
-    return Neo4JUserSession.get(neo4JProxy, currentUser, userIdPrefix);
+    return Neo4JUserSession.get(neo4JProxy, userService, currentUser, userIdPrefix, true);
   }
 }
