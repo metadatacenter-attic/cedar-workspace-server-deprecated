@@ -10,8 +10,6 @@ import org.metadatacenter.server.neo4j.Neo4jConfig;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.server.service.UserService;
 import org.metadatacenter.server.service.mongodb.UserServiceMongoDB;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import play.Configuration;
 import play.Play;
 
@@ -22,8 +20,7 @@ public class DataServices {
   private static DataServices instance = new DataServices();
   private static UserService userService;
   private static Neo4JProxy neo4JProxy;
-  private static ObjectMapper MAPPER = new ObjectMapper();
-
+  private static String userIdPrefix;
 
   public static DataServices getInstance() {
     return instance;
@@ -49,56 +46,16 @@ public class DataServices {
         (ConfigConstants.LINKED_DATA_ID_PATH_SUFFIX_FOLDERS);
     neo4JProxy = new Neo4JProxy(nc, folderIdPrefix);
 
-    CedarUser adminUser = null;
-    String userId = null;
-    try {
-      userId = config.getString(USER_ADMIN_USER_UUID);
-      adminUser = userService.findUser(userId);
-    } catch (Exception ex) {
-      play.Logger.error("Error while loading admin user for id:" + userId + ":");
-    }
-    if (adminUser == null) {
-      play.Logger.error("Admin user not found for id:" + userId + ":");
-      play.Logger.error("Please log into the web application with the cedar-admin user, and then start the FolderServer again!");
-      play.Logger.error("Unable to ensure the existence of global objects, exiting!");
-      System.exit(-1);
-    } else {
-      Neo4JUserSession neo4JSession = getNeo4JSession(adminUser, false);
-      neo4JSession.ensureGlobalObjectsExists();
-    }
+    userIdPrefix = config.getString(ConfigConstants.LINKED_DATA_ID_PATH_BASE) + config.getString
+        (ConfigConstants.LINKED_DATA_ID_PATH_SUFFIX_USERS);
+
   }
 
   public UserService getUserService() {
     return userService;
   }
 
-  public Neo4JUserSession getNeo4JSession(CedarUser cu) {
-    return getNeo4JSession(cu, true);
+  public Neo4JUserSession getNeo4JSession(CedarUser currentUser) {
+    return Neo4JUserSession.get(neo4JProxy, currentUser, userIdPrefix);
   }
-
-  private Neo4JUserSession getNeo4JSession(CedarUser cu, boolean createHome) {
-    Configuration config = Play.application().configuration();
-    Neo4JUserSession neo4JSession = Neo4JUserSession.get(neo4JProxy, cu, config.getString(USER_DATA_ID_PATH_BASE));
-    if (createHome) {
-      System.out.println("cedar-folder-server -> DataServices -> getNeo4JSession -> createHome");
-      CedarFSFolder createdFolder = neo4JSession.ensureUserHomeExists();
-      System.out.println("cedar-folder-server -> DataServices -> getNeo4JSession -> createdFolder");
-      System.out.println(createdFolder);
-      // the home folder was just created. Store the ID on the user
-      if (createdFolder != null) {
-        ObjectNode homeModification = MAPPER.createObjectNode();
-        homeModification.put("homeFolderId", createdFolder.getId());
-        System.out.println("homeModification: " + homeModification);
-        try {
-          userService.updateUser(cu.getUserId(), homeModification);
-          System.out.println("User updated");
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      }
-    }
-    return neo4JSession;
-  }
-
-
 }

@@ -54,6 +54,11 @@
 
     <dependency>
       <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-folder-operations</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-folder-server-core</artifactId>
     </dependency>
 
