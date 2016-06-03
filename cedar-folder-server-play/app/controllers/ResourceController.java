@@ -1,7 +1,6 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
@@ -12,6 +11,7 @@ import org.metadatacenter.model.folderserver.CedarFSResource;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FSNodeListResponse;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
+import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
@@ -20,6 +20,7 @@ import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.server.util.ParameterUtil;
 import org.metadatacenter.util.http.LinkHeaderUtil;
+import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.libs.F;
@@ -30,7 +31,6 @@ import java.util.*;
 
 public class ResourceController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(ResourceController.class);
-  private static ObjectMapper MAPPER = new ObjectMapper();
 
   final static List<String> knownSortKeys;
   public static final String DEFAULT_SORT;
@@ -75,21 +75,21 @@ public class ResourceController extends AbstractFolderServerController {
           "You must supply the name of the new resource!");
 
       // get resourceType parameter
-      String resourceTypeString = ParameterUtil.getStringOrThrowError(creationRequest, "resourceType",
-          "You must supply the resourceType of the new resource!");
+      String nodeTypeString = ParameterUtil.getStringOrThrowError(creationRequest, "nodeType",
+          "You must supply the nodeType of the new resource!");
 
-      CedarNodeType resourceType = CedarNodeType.forValue(resourceTypeString);
-      if (resourceType == null) {
+      CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
+      if (nodeType == null) {
         StringBuilder sb = new StringBuilder();
         Arrays.asList(CedarNodeType.values()).forEach(crt -> sb.append(crt.getValue()).append(","));
-        throw new IllegalArgumentException("The supplied resource type is invalid! It should be one of:" + sb
+        throw new IllegalArgumentException("The supplied node type is invalid! It should be one of:" + sb
             .toString());
       }
 
 
       String description = "";
       // let's not read resource description for instances
-      if (resourceType != CedarNodeType.INSTANCE) {
+      if (nodeType != CedarNodeType.INSTANCE) {
         // get description
         description = ParameterUtil.getStringOrThrowError(creationRequest, "description",
             "You must supply the description of the new resource!");
@@ -108,11 +108,12 @@ public class ResourceController extends AbstractFolderServerController {
       } else {
         // Later we will guarantee some kind of uniqueness for the resource names
         // Currently we allow duplicate names, the id is the PK
-        newResource = neoSession.createResourceAsChildOfId(parentId, id, resourceType, name, description);
+        NodeLabel nodeLabel = NodeLabel.forCedarNodeType(nodeType);
+        newResource = neoSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel);
       }
 
       if (newResource != null) {
-        JsonNode createdResource = MAPPER.valueToTree(newResource);
+        JsonNode createdResource = JsonMapper.MAPPER.valueToTree(newResource);
         String absoluteUrl = routes.ResourceController.findResource(id).absoluteURL(request());
         response().setHeader(HttpConstants.HTTP_HEADER_LOCATION, absoluteUrl);
         return created(createdResource);
@@ -120,7 +121,7 @@ public class ResourceController extends AbstractFolderServerController {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("parentId", parentId);
         errorParams.put("id", id);
-        errorParams.put("resourceType", resourceTypeString);
+        errorParams.put("resourceType", nodeTypeString);
         return badRequest(generateErrorDescription("resourceNotCreated",
             "The resource was not created:" + id, errorParams));
       }
@@ -200,7 +201,7 @@ public class ResourceController extends AbstractFolderServerController {
     r.setCurrentOffset(offset);
     r.setResources(resources);
     r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
-    JsonNode resp = MAPPER.valueToTree(r);
+    JsonNode resp = JsonMapper.MAPPER.valueToTree(r);
     return ok(resp);
   }
 
@@ -226,7 +227,7 @@ public class ResourceController extends AbstractFolderServerController {
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
         neoSession.addPathAndParentId(resource);
-        JsonNode folderNode = MAPPER.valueToTree(resource);
+        JsonNode folderNode = JsonMapper.MAPPER.valueToTree(resource);
         return ok(folderNode);
       }
     } catch (Exception e) {
@@ -295,7 +296,7 @@ public class ResourceController extends AbstractFolderServerController {
         if (updatedFolder == null) {
           return notFound();
         } else {
-          JsonNode updatedFolderNode = MAPPER.valueToTree(updatedFolder);
+          JsonNode updatedFolderNode = JsonMapper.MAPPER.valueToTree(updatedFolder);
           return ok(updatedFolderNode);
         }
       }

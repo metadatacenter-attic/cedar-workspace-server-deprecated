@@ -1,7 +1,6 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
@@ -16,6 +15,7 @@ import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
+import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.libs.F;
@@ -28,7 +28,6 @@ import java.util.List;
 
 public class FolderContentsController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(FolderContentsController.class);
-  private static ObjectMapper MAPPER = new ObjectMapper();
 
   final static List<String> knownSortKeys;
   public static final String DEFAULT_SORT;
@@ -199,43 +198,43 @@ public class FolderContentsController extends AbstractFolderServerController {
     }
 
     // Test resourceTypes
-    String resourceTypesString = null;
+    String nodeTypesString = null;
     if (resourceTypes.isDefined()) {
-      resourceTypesString = resourceTypes.get();
+      nodeTypesString = resourceTypes.get();
     }
-    if (resourceTypesString != null) {
-      resourceTypesString = resourceTypesString.trim();
+    if (nodeTypesString != null) {
+      nodeTypesString = nodeTypesString.trim();
     }
-    if (resourceTypesString == null || resourceTypesString.isEmpty()) {
+    if (nodeTypesString == null || nodeTypesString.isEmpty()) {
       throw new IllegalArgumentException("You must pass in resource_types as a comma separated list!");
     }
 
-    List<String> resourceTypeStringList = Arrays.asList(StringUtils.split(resourceTypesString, ","));
-    List<CedarNodeType> resourceTypeList = new ArrayList<>();
-    for (String rt : resourceTypeStringList) {
+    List<String> nodeTypeStringList = Arrays.asList(StringUtils.split(nodeTypesString, ","));
+    List<CedarNodeType> nodeTypeList = new ArrayList<>();
+    for (String rt : nodeTypeStringList) {
       CedarNodeType crt = CedarNodeType.forValue(rt);
       if (crt == null) {
         throw new IllegalArgumentException("You passed an illegal sort type:'" + rt + "'. The allowed values are:" +
             CedarNodeType.values());
       } else {
-        resourceTypeList.add(crt);
+        nodeTypeList.add(crt);
       }
     }
 
     FSNodeListResponse r = new FSNodeListResponse();
 
     NodeListRequest req = new NodeListRequest();
-    req.setResourceTypes(resourceTypeList);
+    req.setNodeTypes(nodeTypeList);
     req.setLimit(limit);
     req.setOffset(offset);
     req.setSort(sortList);
 
     r.setRequest(req);
 
-    List<CedarFSNode> resources = neoSession.findFolderContents(folder.getId(), resourceTypeList, limit, offset,
+    List<CedarFSNode> resources = neoSession.findFolderContents(folder.getId(), nodeTypeList, limit, offset,
         sortList);
 
-    long total = neoSession.findFolderContentsCount(folder.getId(), resourceTypeList);
+    long total = neoSession.findFolderContentsCount(folder.getId(), nodeTypeList);
 
     r.setTotalCount(total);
     r.setCurrentOffset(offset);
@@ -247,7 +246,7 @@ public class FolderContentsController extends AbstractFolderServerController {
 
     r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
 
-    JsonNode resp = MAPPER.valueToTree(r);
+    JsonNode resp = JsonMapper.MAPPER.valueToTree(r);
     return ok(resp);
   }
 

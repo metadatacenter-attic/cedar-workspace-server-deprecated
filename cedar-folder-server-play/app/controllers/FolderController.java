@@ -1,12 +1,12 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
+import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
@@ -14,6 +14,7 @@ import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.server.util.ParameterUtil;
+import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.mvc.Result;
@@ -24,7 +25,6 @@ import java.util.Map;
 
 public class FolderController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(FolderController.class);
-  private static ObjectMapper MAPPER = new ObjectMapper();
 
   public static Result createFolder() {
     IAuthRequest frontendRequest = null;
@@ -104,10 +104,10 @@ public class FolderController extends AbstractFolderServerController {
             "There is already a folder at the requested location!", errorParams));
       }
 
-      newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, description);
+      newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, description, NodeLabel.FOLDER);
 
       if (newFolder != null) {
-        JsonNode createdFolder = MAPPER.valueToTree(newFolder);
+        JsonNode createdFolder = JsonMapper.MAPPER.valueToTree(newFolder);
         String absoluteUrl = routes.FolderController.findFolder(newFolder.getId()).absoluteURL(request());
         response().setHeader(HttpConstants.HTTP_HEADER_LOCATION, absoluteUrl);
         return created(createdFolder);
@@ -151,7 +151,7 @@ public class FolderController extends AbstractFolderServerController {
       } else {
 
         neoSession.addPathAndParentId(folder);
-        JsonNode folderNode = MAPPER.valueToTree(folder);
+        JsonNode folderNode = JsonMapper.MAPPER.valueToTree(folder);
         return ok(folderNode);
       }
     } catch (Exception e) {
@@ -227,7 +227,7 @@ public class FolderController extends AbstractFolderServerController {
         if (updatedFolder == null) {
           return notFound();
         } else {
-          JsonNode updatedFolderNode = MAPPER.valueToTree(updatedFolder);
+          JsonNode updatedFolderNode = JsonMapper.MAPPER.valueToTree(updatedFolder);
           return ok(updatedFolderNode);
         }
       }
