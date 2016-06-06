@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
+import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
@@ -95,13 +96,13 @@ public class FolderController extends AbstractFolderServerController {
 
       // check existence of parent folder
       CedarFSFolder newFolder = null;
-      CedarFSFolder newFolderCandidate = neoSession.findFolderByParentIdAndName(parentFolder, name);
+      CedarFSNode newFolderCandidate = neoSession.findNodeByParentIdAndName(parentFolder, name);
       if (newFolderCandidate != null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("parentFolderId", parentFolder.getId());
         errorParams.put("name", name);
-        return badRequest(generateErrorDescription("folderAlreadyPresent",
-            "There is already a folder at the requested location!", errorParams));
+        return badRequest(generateErrorDescription("nodeAlreadyPresent",
+            "There is already a node with the same name at the requested location!", errorParams));
       }
 
       newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, description);
