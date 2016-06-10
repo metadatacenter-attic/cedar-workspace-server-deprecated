@@ -14,7 +14,6 @@ public class DataServices {
   private static DataServices instance = new DataServices();
   private static UserService userService;
   private static Neo4JProxy neo4JProxy;
-  private static String userIdPrefix;
   private static CedarConfig cedarConfig;
 
 
@@ -37,11 +36,8 @@ public class DataServices {
     nc.setLostAndFoundFolderPath(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getPath());
     nc.setLostAndFoundFolderDescription(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getDescription());
 
-    String folderIdPrefix = cedarConfig.getLinkedDataPrefix(CedarNodeType.FOLDER);
-    neo4JProxy = new Neo4JProxy(nc, folderIdPrefix);
-
-    userIdPrefix = cedarConfig.getLinkedDataPrefix(CedarNodeType.USER);
-
+    String genericIdPrefix = cedarConfig.getLinkedDataConfig().getBase();
+    neo4JProxy = new Neo4JProxy(nc, genericIdPrefix);
   }
 
   public UserService getUserService() {
@@ -49,6 +45,6 @@ public class DataServices {
   }
 
   public Neo4JUserSession getNeo4JSession(CedarUser currentUser) {
-    return Neo4JUserSession.get(neo4JProxy, userService, currentUser, userIdPrefix, true);
+    return Neo4JUserSession.get(neo4JProxy, userService, currentUser, true);
   }
 }
