@@ -11,6 +11,7 @@ import org.metadatacenter.model.folderserver.CedarFSResource;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FSNodeListResponse;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
+import org.metadatacenter.server.neo4j.NodeExtraParameter;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
@@ -108,8 +109,12 @@ public class ResourceController extends AbstractFolderServerController {
       } else {
         // Later we will guarantee some kind of uniqueness for the resource names
         // Currently we allow duplicate names, the id is the PK
+        Map<NodeExtraParameter, Object> extraProperties = new HashMap<>();
+        extraProperties.put(NodeExtraParameter.IS_PUBLICLY_READABLE, parentFolder.isPubliclyReadable());
+
         NodeLabel nodeLabel = NodeLabel.forCedarNodeType(nodeType);
-        newResource = neoSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel);
+        newResource = neoSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel,
+            extraProperties);
       }
 
       if (newResource != null) {
