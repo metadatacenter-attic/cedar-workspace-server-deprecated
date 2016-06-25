@@ -1,16 +1,9 @@
 package controllers;
 
 import org.metadatacenter.constant.ConfigConstants;
-import org.metadatacenter.provenance.ProvenanceInfo;
 import org.metadatacenter.server.play.AbstractCedarController;
-import org.metadatacenter.server.security.Authorization;
-import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.IAuthRequest;
-import org.metadatacenter.server.security.model.user.CedarUser;
 import play.Configuration;
 import play.Play;
-
-import java.util.Date;
 
 public class AbstractFolderServerController extends AbstractCedarController {
   protected static Configuration config;
@@ -47,22 +40,4 @@ public class AbstractFolderServerController extends AbstractCedarController {
     }
   }
 
-  protected static ProvenanceInfo buildProvenanceInfo(IAuthRequest authRequest) {
-    ProvenanceInfo pi = new ProvenanceInfo();
-    String id = null;
-    try {
-      CedarUser accountInfo = Authorization.getUser(authRequest);
-      id = accountInfo.getUserId();
-    } catch (CedarAccessException e) {
-      e.printStackTrace();
-    }
-    Date now = new Date();
-    String nowString = xsdDateTimeFormat.format(now);
-    String userId = USER_BASE_PATH + id;
-    pi.setCreatedOn(nowString);
-    pi.setCreatedBy(userId);
-    pi.setLastUpdatedOn(nowString);
-    pi.setLastUpdatedBy(userId);
-    return pi;
-  }
 }
