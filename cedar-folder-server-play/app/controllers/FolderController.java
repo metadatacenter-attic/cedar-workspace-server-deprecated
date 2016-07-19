@@ -7,7 +7,6 @@ import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
-import org.metadatacenter.server.neo4j.NodeExtraParameter;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
@@ -106,11 +105,7 @@ public class FolderController extends AbstractFolderServerController {
             "There is already a node with the same name at the requested location!", errorParams));
       }
 
-      Map<NodeExtraParameter, Object> extraProperties = new HashMap<>();
-      extraProperties.put(NodeExtraParameter.IS_PUBLICLY_READABLE, parentFolder.isPubliclyReadable());
-
-      newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, description, NodeLabel.FOLDER,
-          extraProperties);
+      newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, name, description, NodeLabel.FOLDER);
 
       if (newFolder != null) {
         JsonNode createdFolder = JsonMapper.MAPPER.valueToTree(newFolder);
