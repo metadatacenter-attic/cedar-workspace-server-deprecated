@@ -18,3 +18,7 @@ CEDAR_HOME_IS_UNDEFINED
 cedar-folder-server-play/conf/application-include-neo4j-auth.conf
 cedar-folder-server-play/conf/application-include-user.conf
 cedar-folder-server-play/conf/application-include-linkeddata.conf
+
+pom.xml.releaseBackup
+release.properties
+pom.xml.versionsBackup
