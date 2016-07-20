@@ -37,6 +37,7 @@
     <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-template-operations</artifactId>
+      <version>${cedar.version}</version>
     </dependency>
 
     <dependency>
