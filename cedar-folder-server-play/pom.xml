@@ -17,12 +17,17 @@
 
   <properties>
 
-    <cedar.version>0.5.3-SNAPSHOT</cedar.version>
+    <cedar.version>0.5.3</cedar.version>
 
   </properties>
 
   <dependencies>
     
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-folder-server-core</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.metadatacenter</groupId>
       <artifactId>cedar-project-config</artifactId>
@@ -71,17 +76,6 @@
       <version>${cedar.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-server-utils-core</artifactId>
-      <version>${cedar.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.metadatacenter</groupId>
-      <artifactId>cedar-folder-server-core</artifactId>
-      <version>${cedar.version}</version>
-    </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
