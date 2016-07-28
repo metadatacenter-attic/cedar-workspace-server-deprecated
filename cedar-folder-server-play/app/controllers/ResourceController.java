@@ -156,7 +156,7 @@ public class ResourceController extends AbstractFolderServerController {
 
     // TODO : set default values for input parameters from config
     int limit = 50;
-    int maxAllowedLimit = 1000;
+    int maxAllowedLimit = 15000;
     int offset = 0;
 
     // Input parameter validation: 'limit'
