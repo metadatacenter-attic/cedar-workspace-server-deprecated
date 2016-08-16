@@ -1,19 +1,20 @@
 package utils;
 
+import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.server.neo4j.Neo4JProxy;
+import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.Neo4jConfig;
+import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.server.service.UserService;
 import org.metadatacenter.server.service.mongodb.UserServiceMongoDB;
-import play.Configuration;
-import play.Play;
-
-import static org.metadatacenter.constant.ConfigConstants.*;
 
 public class DataServices {
 
   private static DataServices instance = new DataServices();
   private static UserService userService;
   private static Neo4JProxy neo4JProxy;
+  private static CedarConfig cedarConfig;
 
 
   public static DataServices getInstance() {
@@ -21,29 +22,29 @@ public class DataServices {
   }
 
   private DataServices() {
-    Configuration config = Play.application().configuration();
-    userService = new UserServiceMongoDB(
-        config.getString(MONGODB_DATABASE_NAME),
-        config.getString(USERS_COLLECTION_NAME));
+    cedarConfig = CedarConfig.getInstance();
+    userService = new UserServiceMongoDB(cedarConfig.getMongoConfig().getDatabaseName(),
+        cedarConfig.getMongoCollectionName(CedarNodeType.USER));
 
     Neo4jConfig nc = new Neo4jConfig();
-    nc.setTransactionUrl(config.getString(NEO4J_REST_TRANSACTION_URL));
-    nc.setAuthString(config.getString(NEO4J_REST_AUTH_STRING));
-    nc.setRootFolderPath(config.getString(NEO4J_FOLDERS_ROOT_PATH));
-    nc.setRootFolderDescription(config.getString(NEO4J_FOLDERS_ROOT_DESCRIPTION));
-    nc.setUsersFolderPath(config.getString(NEO4J_FOLDERS_USERS_PATH));
-    nc.setUsersFolderDescription(config.getString(NEO4J_FOLDERS_USERS_DESCRIPTION));
-    nc.setAdminUserUUID(config.getString(NEO4J_ADMIN_USER_UUID));
+    nc.setTransactionUrl(cedarConfig.getNeo4jConfig().getRest().getTransactionUrl());
+    nc.setAuthString(cedarConfig.getNeo4jConfig().getRest().getAuthString());
+    nc.setRootFolderPath(cedarConfig.getFolderStructureConfig().getRootFolder().getPath());
+    nc.setRootFolderDescription(cedarConfig.getFolderStructureConfig().getRootFolder().getDescription());
+    nc.setUsersFolderPath(cedarConfig.getFolderStructureConfig().getUsersFolder().getPath());
+    nc.setUsersFolderDescription(cedarConfig.getFolderStructureConfig().getUsersFolder().getDescription());
+    nc.setLostAndFoundFolderPath(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getPath());
+    nc.setLostAndFoundFolderDescription(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getDescription());
 
-    neo4JProxy = new Neo4JProxy(nc, config.getString(USER_DATA_ID_PATH_BASE));
-    neo4JProxy.init();
+    String genericIdPrefix = cedarConfig.getLinkedDataConfig().getBase();
+    neo4JProxy = new Neo4JProxy(nc, genericIdPrefix);
   }
 
   public UserService getUserService() {
     return userService;
   }
 
-  public Neo4JProxy getNeo4JProxy() {
-    return neo4JProxy;
+  public Neo4JUserSession getNeo4JSession(CedarUser currentUser) {
+    return Neo4JUserSession.get(neo4JProxy, userService, currentUser, true);
   }
 }
