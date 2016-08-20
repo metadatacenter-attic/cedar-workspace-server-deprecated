@@ -23,6 +23,8 @@ DELETE         /resources/:id               controllers.ResourceController.delet
 
 # Nodes (Folders + Resources)
 GET            /nodes                       controllers.ResourceController.findAllNodes(sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
+GET            /nodes/:id/permissions       controllers.ResourceController.getPermissions(id: String)
+PUT            /nodes/:id/permissions       controllers.ResourceController.updatePermissions(id: String)
 
 # For CORS - preflight request
 OPTIONS        /*all                        controllers.MainFolderServerController.preflight(all)

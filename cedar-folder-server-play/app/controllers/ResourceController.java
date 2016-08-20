@@ -16,6 +16,7 @@ import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
 import org.metadatacenter.server.security.model.IAuthRequest;
+import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
@@ -301,7 +302,7 @@ public class ResourceController extends AbstractFolderServerController {
         }
       }
     } catch (Exception e) {
-      play.Logger.error("Error while deleting the resource", e);
+      play.Logger.error("Error while updating the resource", e);
       return internalServerErrorWithError(e);
     }
   }
@@ -339,6 +340,75 @@ public class ResourceController extends AbstractFolderServerController {
       }
     } catch (Exception e) {
       play.Logger.error("Error while deleting the resource", e);
+      return internalServerErrorWithError(e);
+    }
+  }
+
+  public static Result getPermissions(String nodeId) {
+    IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
+    try {
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
+    } catch (CedarAccessException e) {
+      play.Logger.error("Access Error while reading the node", e);
+      return forbiddenWithError(e);
+    }
+
+    try {
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+
+      CedarFSResource resource = neoSession.findResourceById(nodeId);
+      if (resource == null) {
+        ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+        errorParams.put("id", nodeId);
+        return notFound(generateErrorDescription("nodeNotFound",
+            "The node can not be found by id:" + nodeId, errorParams));
+      } else {
+        CedarNodePermissions permissions = neoSession.getNodePermissions(nodeId);
+        JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
+        return ok(permissionsNode);
+      }
+    } catch (Exception e) {
+      play.Logger.error("Error while getting the resource", e);
+      return internalServerErrorWithError(e);
+    }
+  }
+
+  public static Result updatePermissions(String nodeId) {
+    IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
+    try {
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
+    } catch (CedarAccessException e) {
+      play.Logger.error("Access Error while updating the node", e);
+      return forbiddenWithError(e);
+    }
+
+    try {
+      JsonNode permissionUpdateRequest = request().body().asJson();
+      if (permissionUpdateRequest == null) {
+        throw new IllegalArgumentException("You must supply the request body as a json object!");
+      }
+
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+
+      CedarNodePermissions permissions = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest, CedarNodePermissions.class);
+
+      CedarFSResource resource = neoSession.findResourceById(nodeId);
+      if (resource == null) {
+        ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+        errorParams.put("id", nodeId);
+        return notFound(generateErrorDescription("nodeNotFound",
+            "The node can not be found by id:" + nodeId, errorParams));
+      } else {
+        permissions = neoSession.updateNodePermissions(nodeId, permissions);
+        JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
+        return ok(permissionsNode);
+      }
+    } catch (Exception e) {
+      play.Logger.error("Error while updating the node permissions", e);
       return internalServerErrorWithError(e);
     }
   }

@@ -37,7 +37,8 @@ public class DataServices {
     nc.setLostAndFoundFolderDescription(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getDescription());
 
     String genericIdPrefix = cedarConfig.getLinkedDataConfig().getBase();
-    neo4JProxy = new Neo4JProxy(nc, genericIdPrefix);
+    String usersIdPrefix = cedarConfig.getLinkedDataConfig().getUsersBase();
+    neo4JProxy = new Neo4JProxy(nc, genericIdPrefix, usersIdPrefix);
   }
 
   public UserService getUserService() {
