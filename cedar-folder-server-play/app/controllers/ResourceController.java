@@ -17,6 +17,7 @@ import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
 import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
+import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
@@ -394,16 +395,17 @@ public class ResourceController extends AbstractFolderServerController {
 
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarNodePermissions permissions = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest, CedarNodePermissions.class);
+      CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
+          CedarNodePermissionsRequest.class);
 
-      CedarFSResource resource = neoSession.findResourceById(nodeId);
-      if (resource == null) {
+      CedarFSNode node = neoSession.findNodeById(nodeId);
+      if (node == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", nodeId);
         return notFound(generateErrorDescription("nodeNotFound",
             "The node can not be found by id:" + nodeId, errorParams));
       } else {
-        permissions = neoSession.updateNodePermissions(nodeId, permissions);
+        CedarNodePermissions permissions = neoSession.updateNodePermissions(nodeId, permissionsRequest);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }
