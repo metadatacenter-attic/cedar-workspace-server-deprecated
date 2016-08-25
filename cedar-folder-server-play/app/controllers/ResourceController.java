@@ -358,8 +358,8 @@ public class ResourceController extends AbstractFolderServerController {
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSResource resource = neoSession.findResourceById(nodeId);
-      if (resource == null) {
+      CedarFSNode node = neoSession.findNodeById(nodeId);
+      if (node == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", nodeId);
         return notFound(generateErrorDescription("nodeNotFound",
