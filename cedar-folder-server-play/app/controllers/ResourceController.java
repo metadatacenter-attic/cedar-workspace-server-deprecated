@@ -345,28 +345,28 @@ public class ResourceController extends AbstractFolderServerController {
     }
   }
 
-  public static Result getPermissions(String nodeId) {
+  public static Result getPermissions(String resourceId) {
     IAuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
       currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while reading the node", e);
+      play.Logger.error("Access Error while reading the permissions of resource", e);
       return forbiddenWithError(e);
     }
 
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSNode node = neoSession.findNodeById(nodeId);
-      if (node == null) {
+      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-        errorParams.put("id", nodeId);
-        return notFound(generateErrorDescription("nodeNotFound",
-            "The node can not be found by id:" + nodeId, errorParams));
+        errorParams.put("id", resourceId);
+        return notFound(generateErrorDescription("resourceNotFound",
+            "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        CedarNodePermissions permissions = neoSession.getNodePermissions(nodeId);
+        CedarNodePermissions permissions = neoSession.getNodePermissions(resourceId, false);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }
@@ -376,14 +376,14 @@ public class ResourceController extends AbstractFolderServerController {
     }
   }
 
-  public static Result updatePermissions(String nodeId) {
+  public static Result updatePermissions(String resourceId) {
     IAuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
       currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
     } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while updating the node", e);
+      play.Logger.error("Access Error while updating the resource permissions", e);
       return forbiddenWithError(e);
     }
 
@@ -398,19 +398,19 @@ public class ResourceController extends AbstractFolderServerController {
       CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
           CedarNodePermissionsRequest.class);
 
-      CedarFSNode node = neoSession.findNodeById(nodeId);
-      if (node == null) {
+      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-        errorParams.put("id", nodeId);
-        return notFound(generateErrorDescription("nodeNotFound",
-            "The node can not be found by id:" + nodeId, errorParams));
+        errorParams.put("id", resourceId);
+        return notFound(generateErrorDescription("resourceNotFound",
+            "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        CedarNodePermissions permissions = neoSession.updateNodePermissions(nodeId, permissionsRequest);
+        CedarNodePermissions permissions = neoSession.updateNodePermissions(resourceId, permissionsRequest, false);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }
     } catch (Exception e) {
-      play.Logger.error("Error while updating the node permissions", e);
+      play.Logger.error("Error while updating the resource permissions", e);
       return internalServerErrorWithError(e);
     }
   }
