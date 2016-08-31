@@ -19,6 +19,7 @@ import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
+import org.metadatacenter.server.security.model.auth.NodePermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -229,6 +230,15 @@ public class ResourceController extends AbstractFolderServerController {
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
         neoSession.addPathAndParentId(resource);
+        if (neoSession.userHasReadAccessToResource(resourceId)) {
+          resource.addCurrentUserPermission(NodePermission.READ);
+        }
+        if (neoSession.userHasWriteAccessToResource(resourceId)) {
+          resource.addCurrentUserPermission(NodePermission.WRITE);
+        }
+        if (neoSession.userIsOwnerOfResource(resourceId)) {
+          resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
+        }
         JsonNode folderNode = JsonMapper.MAPPER.valueToTree(resource);
         return ok(folderNode);
       }

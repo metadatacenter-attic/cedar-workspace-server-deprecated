@@ -33,8 +33,6 @@ public class DataServices {
     nc.setRootFolderDescription(cedarConfig.getFolderStructureConfig().getRootFolder().getDescription());
     nc.setUsersFolderPath(cedarConfig.getFolderStructureConfig().getUsersFolder().getPath());
     nc.setUsersFolderDescription(cedarConfig.getFolderStructureConfig().getUsersFolder().getDescription());
-    nc.setLostAndFoundFolderPath(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getPath());
-    nc.setLostAndFoundFolderDescription(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getDescription());
 
     String genericIdPrefix = cedarConfig.getLinkedDataConfig().getBase();
     String usersIdPrefix = cedarConfig.getLinkedDataConfig().getUsersBase();
