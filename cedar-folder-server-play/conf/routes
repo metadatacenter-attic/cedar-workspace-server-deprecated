@@ -25,6 +25,12 @@ DELETE         /resources/:id               controllers.ResourceController.delet
 GET            /resources/:id/permissions   controllers.ResourceController.getPermissions(id: String)
 PUT            /resources/:id/permissions   controllers.ResourceController.updatePermissions(id: String)
 
+# Users
+GET            /users                       controllers.UserController.findUsers()
+
+# Groups
+GET            /groups                      controllers.GroupController.findGroups()
+
 # Nodes (Folders + Resources)
 GET            /nodes                       controllers.ResourceController.findAllNodes(sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
 
