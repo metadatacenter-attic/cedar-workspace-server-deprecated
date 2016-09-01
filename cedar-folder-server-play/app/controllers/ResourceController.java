@@ -11,13 +11,15 @@ import org.metadatacenter.model.folderserver.CedarFSResource;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FSNodeListResponse;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
-import org.metadatacenter.server.neo4j.NodeExtraParameter;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
 import org.metadatacenter.server.security.model.IAuthRequest;
+import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
+import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
+import org.metadatacenter.server.security.model.auth.NodePermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -109,12 +111,8 @@ public class ResourceController extends AbstractFolderServerController {
       } else {
         // Later we will guarantee some kind of uniqueness for the resource names
         // Currently we allow duplicate names, the id is the PK
-        Map<NodeExtraParameter, Object> extraProperties = new HashMap<>();
-        extraProperties.put(NodeExtraParameter.IS_PUBLICLY_READABLE, parentFolder.isPubliclyReadable());
-
         NodeLabel nodeLabel = NodeLabel.forCedarNodeType(nodeType);
-        newResource = neoSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel,
-            extraProperties);
+        newResource = neoSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel);
       }
 
       if (newResource != null) {
@@ -232,6 +230,15 @@ public class ResourceController extends AbstractFolderServerController {
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
         neoSession.addPathAndParentId(resource);
+        if (neoSession.userHasReadAccessToResource(resourceId)) {
+          resource.addCurrentUserPermission(NodePermission.READ);
+        }
+        if (neoSession.userHasWriteAccessToResource(resourceId)) {
+          resource.addCurrentUserPermission(NodePermission.WRITE);
+        }
+        if (neoSession.userIsOwnerOfResource(resourceId)) {
+          resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
+        }
         JsonNode folderNode = JsonMapper.MAPPER.valueToTree(resource);
         return ok(folderNode);
       }
@@ -306,7 +313,7 @@ public class ResourceController extends AbstractFolderServerController {
         }
       }
     } catch (Exception e) {
-      play.Logger.error("Error while deleting the resource", e);
+      play.Logger.error("Error while updating the resource", e);
       return internalServerErrorWithError(e);
     }
   }
@@ -344,6 +351,76 @@ public class ResourceController extends AbstractFolderServerController {
       }
     } catch (Exception e) {
       play.Logger.error("Error while deleting the resource", e);
+      return internalServerErrorWithError(e);
+    }
+  }
+
+  public static Result getPermissions(String resourceId) {
+    IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
+    try {
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
+    } catch (CedarAccessException e) {
+      play.Logger.error("Access Error while reading the permissions of resource", e);
+      return forbiddenWithError(e);
+    }
+
+    try {
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+
+      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      if (resource == null) {
+        ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+        errorParams.put("id", resourceId);
+        return notFound(generateErrorDescription("resourceNotFound",
+            "The resource can not be found by id:" + resourceId, errorParams));
+      } else {
+        CedarNodePermissions permissions = neoSession.getNodePermissions(resourceId, false);
+        JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
+        return ok(permissionsNode);
+      }
+    } catch (Exception e) {
+      play.Logger.error("Error while getting the resource", e);
+      return internalServerErrorWithError(e);
+    }
+  }
+
+  public static Result updatePermissions(String resourceId) {
+    IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
+    try {
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
+    } catch (CedarAccessException e) {
+      play.Logger.error("Access Error while updating the resource permissions", e);
+      return forbiddenWithError(e);
+    }
+
+    try {
+      JsonNode permissionUpdateRequest = request().body().asJson();
+      if (permissionUpdateRequest == null) {
+        throw new IllegalArgumentException("You must supply the request body as a json object!");
+      }
+
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+
+      CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
+          CedarNodePermissionsRequest.class);
+
+      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      if (resource == null) {
+        ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+        errorParams.put("id", resourceId);
+        return notFound(generateErrorDescription("resourceNotFound",
+            "The resource can not be found by id:" + resourceId, errorParams));
+      } else {
+        CedarNodePermissions permissions = neoSession.updateNodePermissions(resourceId, permissionsRequest, false);
+        JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
+        return ok(permissionsNode);
+      }
+    } catch (Exception e) {
+      play.Logger.error("Error while updating the resource permissions", e);
       return internalServerErrorWithError(e);
     }
   }

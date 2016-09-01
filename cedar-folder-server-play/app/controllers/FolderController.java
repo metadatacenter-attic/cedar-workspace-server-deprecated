@@ -7,18 +7,18 @@ import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
-import org.metadatacenter.server.neo4j.NodeExtraParameter;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
 import org.metadatacenter.server.security.model.IAuthRequest;
+import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
+import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
+import org.metadatacenter.server.security.model.auth.NodePermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.util.parameter.ParameterUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import play.mvc.Result;
 import utils.DataServices;
 
@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class FolderController extends AbstractFolderServerController {
-  private static Logger log = LoggerFactory.getLogger(FolderController.class);
 
   public static Result createFolder() {
     IAuthRequest frontendRequest = null;
@@ -42,30 +41,30 @@ public class FolderController extends AbstractFolderServerController {
     try {
       JsonNode creationRequest = request().body().asJson();
       if (creationRequest == null) {
-        throw new IllegalArgumentException("You must supply the request body as a json object!");
+        return badRequest(generateErrorDescription("missingRequestBody",
+            "You must supply the request body as a json object!"));
       }
-
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
       String folderId = ParameterUtil.getString(creationRequest, "folderId", "");
       String path = ParameterUtil.getString(creationRequest, "path", "");
       if (folderId.isEmpty() && path.isEmpty()) {
         return badRequest(generateErrorDescription("parentFolderNotSpecified",
             "You need to supply either path or folderId parameter identifying the parent folder"));
-
       }
       if (!folderId.isEmpty() && !path.isEmpty()) {
         return badRequest(generateErrorDescription("parentFolderSpecifiedTwice",
             "You need to supply either path or folderId parameter (not both) identifying the parent folder"));
       }
 
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
       CedarFSFolder parentFolder = null;
 
       String normalizedPath = null;
       if (!path.isEmpty()) {
         normalizedPath = neoSession.normalizePath(path);
         if (!normalizedPath.equals(path)) {
-          throw new IllegalArgumentException("You must supply the path of the new folder in normalized form!");
+          return badRequest(generateErrorDescription("pathNotNormalized",
+              "You must supply the path of the new folder in normalized form!"));
         }
         parentFolder = neoSession.findFolderByPath(path);
       }
@@ -88,7 +87,8 @@ public class FolderController extends AbstractFolderServerController {
       // test new folder name syntax
       String normalizedName = neoSession.sanitizeName(name);
       if (!normalizedName.equals(name)) {
-        throw new IllegalArgumentException("The new folder name contains invalid characters!");
+        return badRequest(generateErrorDescription("invalidFolderName",
+            "The new folder name contains invalid characters!"));
       }
 
       // get description parameter
@@ -106,11 +106,7 @@ public class FolderController extends AbstractFolderServerController {
             "There is already a node with the same name at the requested location!", errorParams));
       }
 
-      Map<NodeExtraParameter, Object> extraProperties = new HashMap<>();
-      extraProperties.put(NodeExtraParameter.IS_PUBLICLY_READABLE, parentFolder.isPubliclyReadable());
-
-      newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, description, NodeLabel.FOLDER,
-          extraProperties);
+      newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, name, description, NodeLabel.FOLDER);
 
       if (newFolder != null) {
         JsonNode createdFolder = JsonMapper.MAPPER.valueToTree(newFolder);
@@ -125,9 +121,6 @@ public class FolderController extends AbstractFolderServerController {
         return badRequest(generateErrorDescription("folderNotCreated",
             "The folder was not created!", errorParams));
       }
-    } catch (IllegalArgumentException e) {
-      play.Logger.error("Illegal argument while creating the folder", e);
-      return badRequestWithError(e);
     } catch (Exception e) {
       play.Logger.error("Error while creating the folder", e);
       return internalServerErrorWithError(e);
@@ -155,8 +148,16 @@ public class FolderController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-
         neoSession.addPathAndParentId(folder);
+        if (neoSession.userHasReadAccessToFolder(folderId)) {
+          folder.addCurrentUserPermission(NodePermission.READ);
+        }
+        if (neoSession.userHasWriteAccessToFolder(folderId)) {
+          folder.addCurrentUserPermission(NodePermission.WRITE);
+        }
+        if (neoSession.userIsOwnerOfFolder(folderId)) {
+          folder.addCurrentUserPermission(NodePermission.CHANGEOWNER);
+        }
         JsonNode folderNode = JsonMapper.MAPPER.valueToTree(folder);
         return ok(folderNode);
       }
@@ -180,7 +181,8 @@ public class FolderController extends AbstractFolderServerController {
     try {
       JsonNode folderUpdateRequest = request().body().asJson();
       if (folderUpdateRequest == null) {
-        throw new IllegalArgumentException("You must supply the request body as a json object!");
+        return badRequest(generateErrorDescription("missingRequestBody",
+            "You must supply the request body as a json object!"));
       }
 
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
@@ -198,7 +200,8 @@ public class FolderController extends AbstractFolderServerController {
       if (name != null) {
         String normalizedName = neoSession.sanitizeName(name);
         if (!normalizedName.equals(name)) {
-          throw new IllegalArgumentException("The folder name contains invalid characters!");
+          return badRequest(generateErrorDescription("invalidFolderName",
+              "The folder name contains invalid characters!"));
         }
       }
 
@@ -212,7 +215,8 @@ public class FolderController extends AbstractFolderServerController {
       }
 
       if ((name == null || name.isEmpty()) && (description == null || description.isEmpty())) {
-        throw new IllegalArgumentException("You must supply the new description or the new name of the folder!");
+        return badRequest(generateErrorDescription("missingNameAndDescription",
+            "You must supply the new description or the new name of the folder!"));
       }
 
       CedarFSFolder folder = neoSession.findFolderById(folderId);
@@ -228,6 +232,7 @@ public class FolderController extends AbstractFolderServerController {
         }
         if (name != null) {
           updateFields.put("name", name);
+          updateFields.put("displayName", name);
         }
         CedarFSFolder updatedFolder = neoSession.updateFolderById(folderId, updateFields);
         if (updatedFolder == null) {
@@ -293,6 +298,77 @@ public class FolderController extends AbstractFolderServerController {
       }
     } catch (Exception e) {
       play.Logger.error("Error while deleting the folder", e);
+      return internalServerErrorWithError(e);
+    }
+  }
+
+  public static Result getPermissions(String folderId) {
+    IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
+    try {
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
+    } catch (CedarAccessException e) {
+      play.Logger.error("Access Error while reading the permissions of folder", e);
+      return forbiddenWithError(e);
+    }
+
+    try {
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+
+      CedarFSFolder folder = neoSession.findFolderById(folderId);
+      if (folder == null) {
+        ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+        errorParams.put("id", folderId);
+        return notFound(generateErrorDescription("folderNotFound",
+            "The folder can not be found by id:" + folderId, errorParams));
+      } else {
+        CedarNodePermissions permissions = neoSession.getNodePermissions(folderId, true);
+        JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
+        return ok(permissionsNode);
+      }
+    } catch (Exception e) {
+      play.Logger.error("Error while getting the folder", e);
+      return internalServerErrorWithError(e);
+    }
+  }
+
+  public static Result updatePermissions(String folderId) {
+    IAuthRequest frontendRequest = null;
+    CedarUser currentUser = null;
+    try {
+      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
+      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
+    } catch (CedarAccessException e) {
+      play.Logger.error("Access Error while updating the folder permissions", e);
+      return forbiddenWithError(e);
+    }
+
+    try {
+      JsonNode permissionUpdateRequest = request().body().asJson();
+      if (permissionUpdateRequest == null) {
+        return badRequest(generateErrorDescription("missingRequestBody",
+            "You must supply the request body as a json object!"));
+      }
+
+      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+
+      CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
+          CedarNodePermissionsRequest.class);
+
+      CedarFSFolder folder = neoSession.findFolderById(folderId);
+      if (folder == null) {
+        ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
+        errorParams.put("id", folderId);
+        return notFound(generateErrorDescription("folderNotFound",
+            "The folder can not be found by id:" + folderId, errorParams));
+      } else {
+        CedarNodePermissions permissions = neoSession.updateNodePermissions(folderId, permissionsRequest, true);
+        JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
+        return ok(permissionsNode);
+      }
+    } catch (Exception e) {
+      play.Logger.error("Error while updating the folder permissions", e);
       return internalServerErrorWithError(e);
     }
   }
