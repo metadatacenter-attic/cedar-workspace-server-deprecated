@@ -7,6 +7,7 @@ import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FSNodeListResponse;
+import org.metadatacenter.server.neo4j.FolderContentSortOptions;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
@@ -28,17 +29,6 @@ import java.util.List;
 
 public class FolderContentsController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(FolderContentsController.class);
-
-  final static List<String> knownSortKeys;
-  public static final String DEFAULT_SORT;
-
-  static {
-    DEFAULT_SORT = "name";
-    knownSortKeys = new ArrayList<>();
-    knownSortKeys.add("name");
-    knownSortKeys.add("createdOnTS");
-    knownSortKeys.add("lastUpdatedOnTS");
-  }
 
   public static Result findFolderContentsByPath(F.Option<String> pathParam, F.Option<String> resourceTypes, F
       .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
@@ -178,7 +168,7 @@ public class FolderContentsController extends AbstractFolderServerController {
     if (sort.isDefined()) {
       sortString = sort.get();
     } else {
-      sortString = DEFAULT_SORT;
+      sortString = FolderContentSortOptions.getDefaultSortField().getName();
     }
 
     if (sortString != null) {
@@ -191,9 +181,9 @@ public class FolderContentsController extends AbstractFolderServerController {
       if (s != null && s.startsWith("-")) {
         test = s.substring(1);
       }
-      if (!knownSortKeys.contains(test)) {
+      if (!FolderContentSortOptions.isKnownField(test)) {
         throw new IllegalArgumentException("You passed an illegal sort type:'" + s + "'. The allowed values are:" +
-            knownSortKeys);
+            FolderContentSortOptions.getKnownFieldNames());
       }
     }
 
