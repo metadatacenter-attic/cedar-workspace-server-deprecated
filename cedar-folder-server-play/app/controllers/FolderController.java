@@ -363,7 +363,8 @@ public class FolderController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        CedarNodePermissions permissions = neoSession.updateNodePermissions(folderId, permissionsRequest, true);
+        neoSession.updateNodePermissions(folderId, permissionsRequest, true);
+        CedarNodePermissions permissions = neoSession.getNodePermissions(folderId, true);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }

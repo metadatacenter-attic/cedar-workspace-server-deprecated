@@ -415,7 +415,8 @@ public class ResourceController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        CedarNodePermissions permissions = neoSession.updateNodePermissions(resourceId, permissionsRequest, false);
+        neoSession.updateNodePermissions(resourceId, permissionsRequest, false);
+        CedarNodePermissions permissions = neoSession.getNodePermissions(resourceId, false);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }
