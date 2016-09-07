@@ -12,6 +12,7 @@ import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FSNodeListResponse;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
+import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
@@ -302,6 +303,7 @@ public class ResourceController extends AbstractFolderServerController {
         }
         if (name != null) {
           updateFields.put("name", name);
+          updateFields.put("displayName", name);
         }
         //TODO: fix this
         CedarFSResource updatedFolder = neoSession.updateResourceById(resourceId, CedarNodeType.ELEMENT, updateFields);
@@ -415,7 +417,10 @@ public class ResourceController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        neoSession.updateNodePermissions(resourceId, permissionsRequest, false);
+        BackendCallResult backendCallResult = neoSession.updateNodePermissions(resourceId, permissionsRequest, false);
+        if (backendCallResult.isError()) {
+          return backendCallError(backendCallResult);
+        }
         CedarNodePermissions permissions = neoSession.getNodePermissions(resourceId, false);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);

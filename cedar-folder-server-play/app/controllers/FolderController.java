@@ -8,6 +8,7 @@ import org.metadatacenter.model.folderserver.CedarFSFolder;
 import org.metadatacenter.model.folderserver.CedarFSNode;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
+import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
@@ -363,7 +364,10 @@ public class FolderController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        neoSession.updateNodePermissions(folderId, permissionsRequest, true);
+        BackendCallResult backendCallResult = neoSession.updateNodePermissions(folderId, permissionsRequest, true);
+        if (backendCallResult.isError()) {
+          return backendCallError(backendCallResult);
+        }
         CedarNodePermissions permissions = neoSession.getNodePermissions(folderId, true);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
