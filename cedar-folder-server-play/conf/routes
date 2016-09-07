@@ -34,6 +34,10 @@ GET            /groups                      controllers.GroupController.findGrou
 # Nodes (Folders + Resources)
 GET            /nodes                       controllers.ResourceController.findAllNodes(sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
 
+# Commands
+POST           /command/move-node-to-folder controllers.CommandController.moveNodeToFolder()
+
+
 # For CORS - preflight request
 OPTIONS        /*all                        controllers.MainFolderServerController.preflight(all)
 
