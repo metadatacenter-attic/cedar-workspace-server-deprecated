@@ -277,14 +277,14 @@ public class FolderController extends AbstractFolderServerController {
           return badRequest(generateErrorDescription("folderCanNotBeDeleted",
               "System folders can not be deleted", errorParams));
         } else {
-          long contentCount = neoSession.findFolderContentsCount(folder.getId());
-          if (contentCount > 0) {
+          //long contentCount = neoSession.findFolderContentsCount(folder.getId());
+          /*if (contentCount > 0) {
             ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
             errorParams.put("id", folderId);
             errorParams.put("count", "contentCount");
             return badRequest(generateErrorDescription("folderCanNotBeDeleted",
                 "Non-empty folders can not be deleted", errorParams));
-          }
+          }*/
           boolean deleted = neoSession.deleteFolderById(folderId);
           if (deleted) {
             return noContent();
