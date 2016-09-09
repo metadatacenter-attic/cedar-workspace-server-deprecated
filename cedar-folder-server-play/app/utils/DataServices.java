@@ -33,11 +33,10 @@ public class DataServices {
     nc.setRootFolderDescription(cedarConfig.getFolderStructureConfig().getRootFolder().getDescription());
     nc.setUsersFolderPath(cedarConfig.getFolderStructureConfig().getUsersFolder().getPath());
     nc.setUsersFolderDescription(cedarConfig.getFolderStructureConfig().getUsersFolder().getDescription());
-    nc.setLostAndFoundFolderPath(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getPath());
-    nc.setLostAndFoundFolderDescription(cedarConfig.getFolderStructureConfig().getLostAndFoundFolder().getDescription());
 
     String genericIdPrefix = cedarConfig.getLinkedDataConfig().getBase();
-    neo4JProxy = new Neo4JProxy(nc, genericIdPrefix);
+    String usersIdPrefix = cedarConfig.getLinkedDataConfig().getUsersBase();
+    neo4JProxy = new Neo4JProxy(nc, genericIdPrefix, usersIdPrefix);
   }
 
   public UserService getUserService() {
