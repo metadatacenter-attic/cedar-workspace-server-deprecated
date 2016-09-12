@@ -37,6 +37,8 @@ GET            /nodes                       controllers.ResourceController.findA
 # Commands
 POST           /command/move-node-to-folder controllers.CommandController.moveNodeToFolder()
 
+GET            /accessible-node-ids         controllers.PermissionController.accessibleNodeIds()
+
 
 # For CORS - preflight request
 OPTIONS        /*all                        controllers.MainFolderServerController.preflight(all)
