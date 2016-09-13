@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-folder-server</artifactId>
-    <version>0.7.0</version>
+    <version>0.7.1</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
@@ -16,7 +16,7 @@
 
   <properties>
 
-    <cedar.version>0.7.0</cedar.version>
+    <cedar.version>0.7.1</cedar.version>
 
   </properties>
 
