@@ -13,7 +13,6 @@ import play.mvc.Result;
 import utils.DataServices;
 
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
 
 public class PermissionController extends AbstractFolderServerController {
