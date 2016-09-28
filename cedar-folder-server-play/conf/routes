@@ -28,16 +28,6 @@ PUT            /resources/:id/permissions   controllers.ResourceController.updat
 # Users
 GET            /users                       controllers.UserController.findUsers()
 
-# Groups
-POST           /groups                      controllers.GroupController.createGroup()
-GET            /groups                      controllers.GroupController.findGroups()
-GET            /groups/:id                  controllers.GroupController.findGroup(id: String)
-PATCH          /groups/:id                  controllers.GroupController.patchGroup(id: String)
-PUT            /groups/:id                  controllers.GroupController.updateGroup(id: String)
-DELETE         /groups/:id                  controllers.GroupController.deleteGroup(id: String)
-GET            /groups/:id/members          controllers.GroupController.getGroupMembers(id: String)
-PUT            /groups/:id/members          controllers.GroupController.updateGroupMembers(id: String)
-
 # Nodes (Folders + Resources)
 GET            /nodes                       controllers.ResourceController.findAllNodes(sort: play.libs.F.Option[String], limit: play.libs.F.Option[Integer], offset: play.libs.F.Option[Integer])
 
