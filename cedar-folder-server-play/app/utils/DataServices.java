@@ -26,17 +26,9 @@ public class DataServices {
     userService = new UserServiceMongoDB(cedarConfig.getMongoConfig().getDatabaseName(),
         cedarConfig.getMongoCollectionName(CedarNodeType.USER));
 
-    Neo4jConfig nc = new Neo4jConfig();
-    nc.setTransactionUrl(cedarConfig.getNeo4jConfig().getRest().getTransactionUrl());
-    nc.setAuthString(cedarConfig.getNeo4jConfig().getRest().getAuthString());
-    nc.setRootFolderPath(cedarConfig.getFolderStructureConfig().getRootFolder().getPath());
-    nc.setRootFolderDescription(cedarConfig.getFolderStructureConfig().getRootFolder().getDescription());
-    nc.setUsersFolderPath(cedarConfig.getFolderStructureConfig().getUsersFolder().getPath());
-    nc.setUsersFolderDescription(cedarConfig.getFolderStructureConfig().getUsersFolder().getDescription());
-
-    String genericIdPrefix = cedarConfig.getLinkedDataConfig().getBase();
-    String usersIdPrefix = cedarConfig.getLinkedDataConfig().getUsersBase();
-    neo4JProxy = new Neo4JProxy(nc, genericIdPrefix, usersIdPrefix);
+    neo4JProxy = new Neo4JProxy(Neo4jConfig.fromCedarConfig(cedarConfig),
+        cedarConfig.getLinkedDataConfig().getBase(),
+        cedarConfig.getLinkedDataConfig().getUsersBase());
   }
 
   public UserService getUserService() {
