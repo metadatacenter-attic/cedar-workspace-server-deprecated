@@ -14,12 +14,16 @@ POST           /folders                     controllers.FolderController.createF
 GET            /folders/:id                 controllers.FolderController.findFolder(id: String)
 PUT            /folders/:id                 controllers.FolderController.updateFolder(id: String)
 DELETE         /folders/:id                 controllers.FolderController.deleteFolder(id: String)
+GET            /folders/:id/permissions     controllers.FolderController.getPermissions(id: String)
+PUT            /folders/:id/permissions     controllers.FolderController.updatePermissions(id: String)
 
 # Resources
 POST           /resources                   controllers.ResourceController.createResource()
 GET            /resources/:id               controllers.ResourceController.findResource(id: String)
 PUT            /resources/:id               controllers.ResourceController.updateResource(id: String)
 DELETE         /resources/:id               controllers.ResourceController.deleteResource(id: String)
+GET            /resources/:id/permissions   controllers.ResourceController.getPermissions(id: String)
+PUT            /resources/:id/permissions   controllers.ResourceController.updatePermissions(id: String)
 
 # Users
 GET            /users                       controllers.UserController.findUsers()
@@ -29,6 +33,9 @@ GET            /nodes                       controllers.ResourceController.findA
 
 # Commands
 POST           /command/move-node-to-folder controllers.CommandController.moveNodeToFolder()
+
+GET            /accessible-node-ids         controllers.PermissionController.accessibleNodeIds()
+
 
 # For CORS - preflight request
 OPTIONS        /*all                        controllers.MainFolderServerController.preflight(all)
