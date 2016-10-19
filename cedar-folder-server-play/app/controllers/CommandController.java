@@ -10,7 +10,7 @@ import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.IAuthRequest;
+import org.metadatacenter.server.security.model.AuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import play.mvc.Result;
@@ -20,7 +20,7 @@ public class CommandController extends AbstractFolderServerController {
 
 
   public static Result moveNodeToFolder() {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());

@@ -16,7 +16,7 @@ import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.IAuthRequest;
+import org.metadatacenter.server.security.model.AuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
@@ -48,7 +48,7 @@ public class ResourceController extends AbstractFolderServerController {
   }
 
   public static Result createResource() {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
@@ -140,7 +140,7 @@ public class ResourceController extends AbstractFolderServerController {
 
   public static Result findAllNodes(F.Option<String> sortParam, F.Option<Integer> limitParam, F.Option<Integer>
       offsetParam) {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
@@ -210,7 +210,7 @@ public class ResourceController extends AbstractFolderServerController {
   }
 
   public static Result findResource(String resourceId) {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
@@ -250,7 +250,7 @@ public class ResourceController extends AbstractFolderServerController {
   }
 
   public static Result updateResource(String resourceId) {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
@@ -321,7 +321,7 @@ public class ResourceController extends AbstractFolderServerController {
   }
 
   public static Result deleteResource(String resourceId) {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
@@ -358,7 +358,7 @@ public class ResourceController extends AbstractFolderServerController {
   }
 
   public static Result getPermissions(String resourceId) {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
@@ -389,7 +389,7 @@ public class ResourceController extends AbstractFolderServerController {
   }
 
   public static Result updatePermissions(String resourceId) {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());

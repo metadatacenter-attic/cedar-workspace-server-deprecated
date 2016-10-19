@@ -12,7 +12,7 @@ import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.IAuthRequest;
+import org.metadatacenter.server.security.model.AuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
@@ -32,7 +32,7 @@ public class FolderContentsController extends AbstractFolderServerController {
 
   public static Result findFolderContentsByPath(F.Option<String> pathParam, F.Option<String> resourceTypes, F
       .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
@@ -90,7 +90,7 @@ public class FolderContentsController extends AbstractFolderServerController {
 
   public static Result findFolderContentsById(String id, F.Option<String> resourceTypes, F.Option<String>
       sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
-    IAuthRequest frontendRequest = null;
+    AuthRequest frontendRequest = null;
     CedarUser currentUser = null;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());

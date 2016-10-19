@@ -5,7 +5,7 @@ import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.IAuthRequest;
+import org.metadatacenter.server.security.model.AuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.json.JsonMapper;
@@ -19,7 +19,7 @@ import java.util.Map;
 public class PermissionController extends AbstractFolderServerController {
 
   public static Result accessibleNodeIds() {
-    IAuthRequest frontendRequest;
+    AuthRequest frontendRequest;
     CedarUser currentUser;
     try {
       frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
