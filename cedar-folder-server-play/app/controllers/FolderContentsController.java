@@ -7,8 +7,8 @@ import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
+import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.neo4j.FolderContentSortOptions;
-import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
 import org.metadatacenter.server.security.exception.CedarAccessException;
@@ -56,14 +56,14 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You need to specify path as a request parameter!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
 
-      String normalizedPath = neoSession.normalizePath(path);
+      String normalizedPath = folderSession.normalizePath(path);
       if (!normalizedPath.equals(path)) {
         throw new IllegalArgumentException("The path is not in normalized form!");
       }
 
-      FolderServerFolder folder = neoSession.findFolderByPath(path);
+      FolderServerFolder folder = folderSession.findFolderByPath(path);
       if (folder == null) {
         return notFound();
       }
@@ -74,9 +74,9 @@ public class FolderContentsController extends AbstractFolderServerController {
           none)
           .absoluteURL(request());
 
-      List<FolderServerFolder> pathInfo = neoSession.findFolderPathByPath(path);
+      List<FolderServerFolder> pathInfo = folderSession.findFolderPathByPath(path);
 
-      return findFolderContents(neoSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
+      return findFolderContents(folderSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
           offsetParam);
 
     } catch (IllegalArgumentException e) {
@@ -109,9 +109,9 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You need to specify id as a request parameter!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
 
-      FolderServerFolder folder = neoSession.findFolderById(id);
+      FolderServerFolder folder = folderSession.findFolderById(id);
       if (folder == null) {
         return notFound();
       }
@@ -122,9 +122,9 @@ public class FolderContentsController extends AbstractFolderServerController {
           none)
           .absoluteURL(request());
 
-      List<FolderServerFolder> pathInfo = neoSession.findFolderPath(folder);
+      List<FolderServerFolder> pathInfo = folderSession.findFolderPath(folder);
 
-      return findFolderContents(neoSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
+      return findFolderContents(folderSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
           offsetParam);
 
     } catch (IllegalArgumentException e) {
@@ -137,7 +137,7 @@ public class FolderContentsController extends AbstractFolderServerController {
   }
 
 
-  private static Result findFolderContents(Neo4JUserSession neoSession, FolderServerFolder folder, String absoluteUrl,
+  private static Result findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String absoluteUrl,
                                            List<FolderServerFolder> pathInfo, F.Option<String> resourceTypes, F
                                                .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer>
                                                offsetParam) {
@@ -221,10 +221,10 @@ public class FolderContentsController extends AbstractFolderServerController {
 
     r.setRequest(req);
 
-    List<FolderServerNode> resources = neoSession.findFolderContents(folder.getId(), nodeTypeList, limit, offset,
+    List<FolderServerNode> resources = folderSession.findFolderContents(folder.getId(), nodeTypeList, limit, offset,
         sortList);
 
-    long total = neoSession.findFolderContentsCount(folder.getId(), nodeTypeList);
+    long total = folderSession.findFolderContentsCount(folder.getId(), nodeTypeList);
 
     r.setTotalCount(total);
     r.setCurrentOffset(offset);

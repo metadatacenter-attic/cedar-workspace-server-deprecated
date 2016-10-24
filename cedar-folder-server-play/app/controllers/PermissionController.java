@@ -1,6 +1,7 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
@@ -13,7 +14,6 @@ import play.mvc.Result;
 import utils.DataServices;
 
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
 
 public class PermissionController extends AbstractFolderServerController {
@@ -30,9 +30,9 @@ public class PermissionController extends AbstractFolderServerController {
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
 
-      Map<String, String> ids = neoSession.findAccessibleNodeIds();
+      Map<String, String> ids = permissionSession.findAccessibleNodeIds();
 
       Map<String, Object> r = new IdentityHashMap<>();
       r.put("accessibleNodes", ids);

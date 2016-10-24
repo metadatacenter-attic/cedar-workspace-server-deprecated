@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.server.FolderServiceSession;
+import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.result.BackendCallResult;
@@ -57,21 +59,21 @@ public class FolderController extends AbstractFolderServerController {
             "You need to supply either path or folderId parameter (not both) identifying the parent folder"));
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
       FolderServerFolder parentFolder = null;
 
       String normalizedPath = null;
       if (!path.isEmpty()) {
-        normalizedPath = neoSession.normalizePath(path);
+        normalizedPath = folderSession.normalizePath(path);
         if (!normalizedPath.equals(path)) {
           return badRequest(generateErrorDescription("pathNotNormalized",
               "You must supply the path of the new folder in normalized form!"));
         }
-        parentFolder = neoSession.findFolderByPath(path);
+        parentFolder = folderSession.findFolderByPath(path);
       }
 
       if (!folderId.isEmpty()) {
-        parentFolder = neoSession.findFolderById(folderId);
+        parentFolder = folderSession.findFolderById(folderId);
       }
 
       if (parentFolder == null) {
@@ -86,7 +88,7 @@ public class FolderController extends AbstractFolderServerController {
       String name = ParameterUtil.getStringOrThrowError(creationRequest, "name",
           "You must supply the name of the new folder!");
       // test new folder name syntax
-      String normalizedName = neoSession.sanitizeName(name);
+      String normalizedName = folderSession.sanitizeName(name);
       if (!normalizedName.equals(name)) {
         return badRequest(generateErrorDescription("invalidFolderName",
             "The new folder name contains invalid characters!"));
@@ -98,7 +100,7 @@ public class FolderController extends AbstractFolderServerController {
 
       // check existence of parent folder
       FolderServerFolder newFolder = null;
-      FolderServerNode newFolderCandidate = neoSession.findNodeByParentIdAndName(parentFolder, name);
+      FolderServerNode newFolderCandidate = folderSession.findNodeByParentIdAndName(parentFolder, name);
       if (newFolderCandidate != null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("parentFolderId", parentFolder.getId());
@@ -107,7 +109,7 @@ public class FolderController extends AbstractFolderServerController {
             "There is already a node with the same name at the requested location!", errorParams));
       }
 
-      newFolder = neoSession.createFolderAsChildOfId(parentFolder.getId(), name, name, description, NodeLabel.FOLDER);
+      newFolder = folderSession.createFolderAsChildOfId(parentFolder.getId(), name, name, description, NodeLabel.FOLDER);
 
       if (newFolder != null) {
         JsonNode createdFolder = JsonMapper.MAPPER.valueToTree(newFolder);
@@ -140,23 +142,24 @@ public class FolderController extends AbstractFolderServerController {
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
 
-      FolderServerFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = folderSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        neoSession.addPathAndParentId(folder);
-        if (neoSession.userHasReadAccessToFolder(folderId)) {
+        folderSession.addPathAndParentId(folder);
+        if (permissionSession.userHasReadAccessToFolder(folderId)) {
           folder.addCurrentUserPermission(NodePermission.READ);
         }
-        if (neoSession.userHasWriteAccessToFolder(folderId)) {
+        if (permissionSession.userHasWriteAccessToFolder(folderId)) {
           folder.addCurrentUserPermission(NodePermission.WRITE);
         }
-        if (neoSession.userIsOwnerOfFolder(folderId)) {
+        if (permissionSession.userIsOwnerOfFolder(folderId)) {
           folder.addCurrentUserPermission(NodePermission.CHANGEOWNER);
         }
         JsonNode folderNode = JsonMapper.MAPPER.valueToTree(folder);
@@ -186,7 +189,7 @@ public class FolderController extends AbstractFolderServerController {
             "You must supply the request body as a json object!"));
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
 
       String name = null;
       JsonNode nameNode = folderUpdateRequest.get("name");
@@ -199,7 +202,7 @@ public class FolderController extends AbstractFolderServerController {
 
       // test update folder name syntax
       if (name != null) {
-        String normalizedName = neoSession.sanitizeName(name);
+        String normalizedName = folderSession.sanitizeName(name);
         if (!normalizedName.equals(name)) {
           return badRequest(generateErrorDescription("invalidFolderName",
               "The folder name contains invalid characters!"));
@@ -220,7 +223,7 @@ public class FolderController extends AbstractFolderServerController {
             "You must supply the new description or the new name of the folder!"));
       }
 
-      FolderServerFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = folderSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
@@ -235,7 +238,7 @@ public class FolderController extends AbstractFolderServerController {
           updateFields.put("name", name);
           updateFields.put("displayName", name);
         }
-        FolderServerFolder updatedFolder = neoSession.updateFolderById(folderId, updateFields);
+        FolderServerFolder updatedFolder = folderSession.updateFolderById(folderId, updateFields);
         if (updatedFolder == null) {
           return notFound();
         } else {
@@ -261,9 +264,9 @@ public class FolderController extends AbstractFolderServerController {
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
 
-      FolderServerFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = folderSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
@@ -277,7 +280,7 @@ public class FolderController extends AbstractFolderServerController {
           return badRequest(generateErrorDescription("folderCanNotBeDeleted",
               "System folders can not be deleted", errorParams));
         } else {
-          //long contentCount = neoSession.findFolderContentsCount(folder.getId());
+          //long contentCount = folderSession.findFolderContentsCount(folder.getId());
           /*if (contentCount > 0) {
             ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
             errorParams.put("id", folderId);
@@ -285,7 +288,7 @@ public class FolderController extends AbstractFolderServerController {
             return badRequest(generateErrorDescription("folderCanNotBeDeleted",
                 "Non-empty folders can not be deleted", errorParams));
           }*/
-          boolean deleted = neoSession.deleteFolderById(folderId);
+          boolean deleted = folderSession.deleteFolderById(folderId);
           if (deleted) {
             return noContent();
           } else {
@@ -315,16 +318,17 @@ public class FolderController extends AbstractFolderServerController {
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
 
-      FolderServerFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = folderSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        CedarNodePermissions permissions = neoSession.getNodePermissions(folderId, true);
+        CedarNodePermissions permissions = permissionSession.getNodePermissions(folderId, true);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }
@@ -352,23 +356,24 @@ public class FolderController extends AbstractFolderServerController {
             "You must supply the request body as a json object!"));
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
 
       CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
           CedarNodePermissionsRequest.class);
 
-      FolderServerFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = folderSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        BackendCallResult backendCallResult = neoSession.updateNodePermissions(folderId, permissionsRequest, true);
+        BackendCallResult backendCallResult = permissionSession.updateNodePermissions(folderId, permissionsRequest, true);
         if (backendCallResult.isError()) {
           return backendCallError(backendCallResult);
         }
-        CedarNodePermissions permissions = neoSession.getNodePermissions(folderId, true);
+        CedarNodePermissions permissions = permissionSession.getNodePermissions(folderId, true);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }

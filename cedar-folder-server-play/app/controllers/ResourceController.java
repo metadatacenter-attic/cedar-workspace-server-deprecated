@@ -10,6 +10,8 @@ import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
+import org.metadatacenter.server.FolderServiceSession;
+import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.result.BackendCallResult;
@@ -64,7 +66,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
 
       // get parentId
       String parentId = ParameterUtil.getStringOrThrowError(creationRequest, "parentId",
@@ -101,7 +103,7 @@ public class ResourceController extends AbstractFolderServerController {
 
       // check existence of parent folder
       FolderServerResource newResource = null;
-      FolderServerFolder parentFolder = neoSession.findFolderById(parentId);
+      FolderServerFolder parentFolder = folderSession.findFolderById(parentId);
 
       String candidatePath = null;
       if (parentFolder == null) {
@@ -113,7 +115,7 @@ public class ResourceController extends AbstractFolderServerController {
         // Later we will guarantee some kind of uniqueness for the resource names
         // Currently we allow duplicate names, the id is the PK
         NodeLabel nodeLabel = NodeLabel.forCedarNodeType(nodeType);
-        newResource = neoSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel);
+        newResource = folderSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel);
       }
 
       if (newResource != null) {
@@ -188,10 +190,10 @@ public class ResourceController extends AbstractFolderServerController {
       sortList.add(DEFAULT_SORT);
     }
 
-    Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+    FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
 
     // Retrieve all resources
-    List<FolderServerNode> resources = neoSession.findAllNodes(limit, offset, sortList);
+    List<FolderServerNode> resources = folderSession.findAllNodes(limit, offset, sortList);
 
     // Build response
     FolderServerNodeListResponse r = new FolderServerNodeListResponse();
@@ -200,7 +202,7 @@ public class ResourceController extends AbstractFolderServerController {
     req.setOffset(offset);
     req.setSort(sortList);
     r.setRequest(req);
-    long total = neoSession.findAllNodesCount();
+    long total = folderSession.findAllNodesCount();
     r.setTotalCount(total);
     r.setCurrentOffset(offset);
     r.setResources(resources);
@@ -221,23 +223,24 @@ public class ResourceController extends AbstractFolderServerController {
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
 
-      FolderServerResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        neoSession.addPathAndParentId(resource);
-        if (neoSession.userHasReadAccessToResource(resourceId)) {
+        folderSession.addPathAndParentId(resource);
+        if (permissionSession.userHasReadAccessToResource(resourceId)) {
           resource.addCurrentUserPermission(NodePermission.READ);
         }
-        if (neoSession.userHasWriteAccessToResource(resourceId)) {
+        if (permissionSession.userHasWriteAccessToResource(resourceId)) {
           resource.addCurrentUserPermission(NodePermission.WRITE);
         }
-        if (neoSession.userIsOwnerOfResource(resourceId)) {
+        if (permissionSession.userIsOwnerOfResource(resourceId)) {
           resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
         }
         JsonNode folderNode = JsonMapper.MAPPER.valueToTree(resource);
@@ -266,7 +269,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
 
       String name = null;
       JsonNode nameNode = folderUpdateRequest.get("name");
@@ -290,7 +293,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the new description or the new name of the resource!");
       }
 
-      FolderServerResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
@@ -306,7 +309,7 @@ public class ResourceController extends AbstractFolderServerController {
           updateFields.put("displayName", name);
         }
         //TODO: fix this
-        FolderServerResource updatedFolder = neoSession.updateResourceById(resourceId, CedarNodeType.ELEMENT, updateFields);
+        FolderServerResource updatedFolder = folderSession.updateResourceById(resourceId, CedarNodeType.ELEMENT, updateFields);
         if (updatedFolder == null) {
           return notFound();
         } else {
@@ -332,16 +335,16 @@ public class ResourceController extends AbstractFolderServerController {
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
 
-      FolderServerResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        boolean deleted = neoSession.deleteResourceById(resourceId, CedarNodeType.ELEMENT);
+        boolean deleted = folderSession.deleteResourceById(resourceId, CedarNodeType.ELEMENT);
         if (deleted) {
           return noContent();
         } else {
@@ -369,16 +372,17 @@ public class ResourceController extends AbstractFolderServerController {
     }
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
 
-      FolderServerResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        CedarNodePermissions permissions = neoSession.getNodePermissions(resourceId, false);
+        CedarNodePermissions permissions = permissionSession.getNodePermissions(resourceId, false);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }
@@ -405,23 +409,24 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
 
       CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
           CedarNodePermissionsRequest.class);
 
-      FolderServerResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        BackendCallResult backendCallResult = neoSession.updateNodePermissions(resourceId, permissionsRequest, false);
+        BackendCallResult backendCallResult = permissionSession.updateNodePermissions(resourceId, permissionsRequest, false);
         if (backendCallResult.isError()) {
           return backendCallError(backendCallResult);
         }
-        CedarNodePermissions permissions = neoSession.getNodePermissions(resourceId, false);
+        CedarNodePermissions permissions = permissionSession.getNodePermissions(resourceId, false);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }

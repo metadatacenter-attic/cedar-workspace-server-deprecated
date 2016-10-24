@@ -2,6 +2,9 @@ package utils;
 
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.server.FolderServiceSession;
+import org.metadatacenter.server.PermissionServiceSession;
+import org.metadatacenter.server.UserServiceSession;
 import org.metadatacenter.server.neo4j.Neo4JProxy;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.Neo4jConfig;
@@ -35,7 +38,15 @@ public class DataServices {
     return userService;
   }
 
-  public Neo4JUserSession getNeo4JSession(CedarUser currentUser) {
+  public FolderServiceSession getFolderSession(CedarUser currentUser) {
+    return Neo4JUserSession.get(neo4JProxy, userService, currentUser, true);
+  }
+
+  public PermissionServiceSession getPermissionSession(CedarUser currentUser) {
+    return Neo4JUserSession.get(neo4JProxy, userService, currentUser, true);
+  }
+
+  public UserServiceSession getUserSession(CedarUser currentUser) {
     return Neo4JUserSession.get(neo4JProxy, userService, currentUser, true);
   }
 }
