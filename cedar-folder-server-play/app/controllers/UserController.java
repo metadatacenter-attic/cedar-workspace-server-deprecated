@@ -1,8 +1,8 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import org.metadatacenter.model.folderserver.CedarFSUser;
-import org.metadatacenter.model.response.FSUserListResponse;
+import org.metadatacenter.model.folderserver.FolderServerUser;
+import org.metadatacenter.model.response.FolderServerUserListResponse;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
 import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
@@ -33,9 +33,9 @@ public class UserController extends AbstractFolderServerController {
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      List<CedarFSUser> users = neoSession.findUsers();
+      List<FolderServerUser> users = neoSession.findUsers();
 
-      FSUserListResponse r = new FSUserListResponse();
+      FolderServerUserListResponse r = new FolderServerUserListResponse();
 
       r.setUsers(users);
 

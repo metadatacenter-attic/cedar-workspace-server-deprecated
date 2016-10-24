@@ -2,8 +2,8 @@ package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.folderserver.CedarFSFolder;
-import org.metadatacenter.model.folderserver.CedarFSResource;
+import org.metadatacenter.model.folderserver.FolderServerFolder;
+import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.result.BackendCallErrorType;
 import org.metadatacenter.server.result.BackendCallResult;
@@ -41,12 +41,12 @@ public class CommandController extends AbstractFolderServerController {
     Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
     boolean moved;
-    CedarFSFolder targetFolder = neoSession.findFolderById(folderId);
+    FolderServerFolder targetFolder = neoSession.findFolderById(folderId);
     if (nodeType == CedarNodeType.FOLDER) {
-      CedarFSFolder sourceFolder = neoSession.findFolderById(sourceId);
+      FolderServerFolder sourceFolder = neoSession.findFolderById(sourceId);
       moved = neoSession.moveFolder(sourceFolder, targetFolder);
     } else {
-      CedarFSResource sourceResource = neoSession.findResourceById(sourceId);
+      FolderServerResource sourceResource = neoSession.findResourceById(sourceId);
       moved = neoSession.moveResource(sourceResource, targetFolder);
     }
     if (!moved) {

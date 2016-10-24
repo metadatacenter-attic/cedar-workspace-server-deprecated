@@ -3,10 +3,10 @@ package controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
 import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.folderserver.CedarFSFolder;
-import org.metadatacenter.model.folderserver.CedarFSNode;
+import org.metadatacenter.model.folderserver.FolderServerFolder;
+import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.model.request.NodeListRequest;
-import org.metadatacenter.model.response.FSNodeListResponse;
+import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.server.neo4j.FolderContentSortOptions;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.security.Authorization;
@@ -63,7 +63,7 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("The path is not in normalized form!");
       }
 
-      CedarFSFolder folder = neoSession.findFolderByPath(path);
+      FolderServerFolder folder = neoSession.findFolderByPath(path);
       if (folder == null) {
         return notFound();
       }
@@ -74,7 +74,7 @@ public class FolderContentsController extends AbstractFolderServerController {
           none)
           .absoluteURL(request());
 
-      List<CedarFSFolder> pathInfo = neoSession.findFolderPathByPath(path);
+      List<FolderServerFolder> pathInfo = neoSession.findFolderPathByPath(path);
 
       return findFolderContents(neoSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
           offsetParam);
@@ -111,7 +111,7 @@ public class FolderContentsController extends AbstractFolderServerController {
 
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSFolder folder = neoSession.findFolderById(id);
+      FolderServerFolder folder = neoSession.findFolderById(id);
       if (folder == null) {
         return notFound();
       }
@@ -122,7 +122,7 @@ public class FolderContentsController extends AbstractFolderServerController {
           none)
           .absoluteURL(request());
 
-      List<CedarFSFolder> pathInfo = neoSession.findFolderPath(folder);
+      List<FolderServerFolder> pathInfo = neoSession.findFolderPath(folder);
 
       return findFolderContents(neoSession, folder, absoluteUrl, pathInfo, resourceTypes, sort, limitParam,
           offsetParam);
@@ -137,8 +137,8 @@ public class FolderContentsController extends AbstractFolderServerController {
   }
 
 
-  private static Result findFolderContents(Neo4JUserSession neoSession, CedarFSFolder folder, String absoluteUrl,
-                                           List<CedarFSFolder> pathInfo, F.Option<String> resourceTypes, F
+  private static Result findFolderContents(Neo4JUserSession neoSession, FolderServerFolder folder, String absoluteUrl,
+                                           List<FolderServerFolder> pathInfo, F.Option<String> resourceTypes, F
                                                .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer>
                                                offsetParam) {
 
@@ -211,7 +211,7 @@ public class FolderContentsController extends AbstractFolderServerController {
       }
     }
 
-    FSNodeListResponse r = new FSNodeListResponse();
+    FolderServerNodeListResponse r = new FolderServerNodeListResponse();
 
     NodeListRequest req = new NodeListRequest();
     req.setNodeTypes(nodeTypeList);
@@ -221,7 +221,7 @@ public class FolderContentsController extends AbstractFolderServerController {
 
     r.setRequest(req);
 
-    List<CedarFSNode> resources = neoSession.findFolderContents(folder.getId(), nodeTypeList, limit, offset,
+    List<FolderServerNode> resources = neoSession.findFolderContents(folder.getId(), nodeTypeList, limit, offset,
         sortList);
 
     long total = neoSession.findFolderContentsCount(folder.getId(), nodeTypeList);

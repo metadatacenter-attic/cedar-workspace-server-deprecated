@@ -5,11 +5,11 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.folderserver.CedarFSFolder;
-import org.metadatacenter.model.folderserver.CedarFSNode;
-import org.metadatacenter.model.folderserver.CedarFSResource;
+import org.metadatacenter.model.folderserver.FolderServerFolder;
+import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.request.NodeListRequest;
-import org.metadatacenter.model.response.FSNodeListResponse;
+import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.result.BackendCallResult;
@@ -100,8 +100,8 @@ public class ResourceController extends AbstractFolderServerController {
       }
 
       // check existence of parent folder
-      CedarFSResource newResource = null;
-      CedarFSFolder parentFolder = neoSession.findFolderById(parentId);
+      FolderServerResource newResource = null;
+      FolderServerFolder parentFolder = neoSession.findFolderById(parentId);
 
       String candidatePath = null;
       if (parentFolder == null) {
@@ -191,10 +191,10 @@ public class ResourceController extends AbstractFolderServerController {
     Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
     // Retrieve all resources
-    List<CedarFSNode> resources = neoSession.findAllNodes(limit, offset, sortList);
+    List<FolderServerNode> resources = neoSession.findAllNodes(limit, offset, sortList);
 
     // Build response
-    FSNodeListResponse r = new FSNodeListResponse();
+    FolderServerNodeListResponse r = new FolderServerNodeListResponse();
     NodeListRequest req = new NodeListRequest();
     req.setLimit(limit);
     req.setOffset(offset);
@@ -223,7 +223,7 @@ public class ResourceController extends AbstractFolderServerController {
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = neoSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
@@ -290,7 +290,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the new description or the new name of the resource!");
       }
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = neoSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
@@ -306,7 +306,7 @@ public class ResourceController extends AbstractFolderServerController {
           updateFields.put("displayName", name);
         }
         //TODO: fix this
-        CedarFSResource updatedFolder = neoSession.updateResourceById(resourceId, CedarNodeType.ELEMENT, updateFields);
+        FolderServerResource updatedFolder = neoSession.updateResourceById(resourceId, CedarNodeType.ELEMENT, updateFields);
         if (updatedFolder == null) {
           return notFound();
         } else {
@@ -334,7 +334,7 @@ public class ResourceController extends AbstractFolderServerController {
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = neoSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
@@ -371,7 +371,7 @@ public class ResourceController extends AbstractFolderServerController {
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = neoSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
@@ -410,7 +410,7 @@ public class ResourceController extends AbstractFolderServerController {
       CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
           CedarNodePermissionsRequest.class);
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = neoSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);

@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.metadatacenter.constant.HttpConstants;
-import org.metadatacenter.model.folderserver.CedarFSFolder;
-import org.metadatacenter.model.folderserver.CedarFSNode;
+import org.metadatacenter.model.folderserver.FolderServerFolder;
+import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.result.BackendCallResult;
@@ -58,7 +58,7 @@ public class FolderController extends AbstractFolderServerController {
       }
 
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
-      CedarFSFolder parentFolder = null;
+      FolderServerFolder parentFolder = null;
 
       String normalizedPath = null;
       if (!path.isEmpty()) {
@@ -97,8 +97,8 @@ public class FolderController extends AbstractFolderServerController {
           "You must supply the description of the new folder!");
 
       // check existence of parent folder
-      CedarFSFolder newFolder = null;
-      CedarFSNode newFolderCandidate = neoSession.findNodeByParentIdAndName(parentFolder, name);
+      FolderServerFolder newFolder = null;
+      FolderServerNode newFolderCandidate = neoSession.findNodeByParentIdAndName(parentFolder, name);
       if (newFolderCandidate != null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("parentFolderId", parentFolder.getId());
@@ -142,7 +142,7 @@ public class FolderController extends AbstractFolderServerController {
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = neoSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
@@ -220,7 +220,7 @@ public class FolderController extends AbstractFolderServerController {
             "You must supply the new description or the new name of the folder!"));
       }
 
-      CedarFSFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = neoSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
@@ -235,7 +235,7 @@ public class FolderController extends AbstractFolderServerController {
           updateFields.put("name", name);
           updateFields.put("displayName", name);
         }
-        CedarFSFolder updatedFolder = neoSession.updateFolderById(folderId, updateFields);
+        FolderServerFolder updatedFolder = neoSession.updateFolderById(folderId, updateFields);
         if (updatedFolder == null) {
           return notFound();
         } else {
@@ -263,7 +263,7 @@ public class FolderController extends AbstractFolderServerController {
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = neoSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
@@ -317,7 +317,7 @@ public class FolderController extends AbstractFolderServerController {
     try {
       Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
 
-      CedarFSFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = neoSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
@@ -357,7 +357,7 @@ public class FolderController extends AbstractFolderServerController {
       CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
           CedarNodePermissionsRequest.class);
 
-      CedarFSFolder folder = neoSession.findFolderById(folderId);
+      FolderServerFolder folder = neoSession.findFolderById(folderId);
       if (folder == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", folderId);
