@@ -1,36 +1,27 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.metadatacenter.bridge.CedarDataServices;
+import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.PermissionServiceSession;
-import org.metadatacenter.server.neo4j.Neo4JUserSession;
-import org.metadatacenter.server.security.Authorization;
-import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
-import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.AuthRequest;
-import org.metadatacenter.server.security.model.auth.CedarPermission;
-import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.json.JsonMapper;
 import play.mvc.Result;
-import utils.DataServices;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
+
 public class PermissionController extends AbstractFolderServerController {
 
-  public static Result accessibleNodeIds() {
-    AuthRequest frontendRequest;
-    CedarUser currentUser;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while reading the users", e);
-      return forbiddenWithError(e);
-    }
+  public static Result accessibleNodeIds() throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
-      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
+      PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
       Map<String, String> ids = permissionSession.findAccessibleNodeIds();
 

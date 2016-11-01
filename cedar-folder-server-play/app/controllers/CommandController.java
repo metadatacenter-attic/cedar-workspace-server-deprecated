@@ -1,34 +1,26 @@
 package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
+import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.result.BackendCallErrorType;
 import org.metadatacenter.server.result.BackendCallResult;
-import org.metadatacenter.server.security.Authorization;
-import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
-import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.AuthRequest;
-import org.metadatacenter.server.security.model.auth.CedarPermission;
-import org.metadatacenter.server.security.model.user.CedarUser;
 import play.mvc.Result;
-import utils.DataServices;
+
+import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 public class CommandController extends AbstractFolderServerController {
 
 
-  public static Result moveNodeToFolder() {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while moving the node", e);
-      return forbiddenWithError(e);
-    }
+  public static Result moveNodeToFolder() throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     JsonNode jsonBody = request().body().asJson();
     String sourceId = jsonBody.get("sourceId").asText();
@@ -37,8 +29,7 @@ public class CommandController extends AbstractFolderServerController {
 
     CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
 
-
-    FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
     boolean moved;
     FolderServerFolder targetFolder = folderSession.findFolderById(folderId);

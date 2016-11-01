@@ -3,43 +3,36 @@ package controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
-import org.metadatacenter.server.neo4j.Neo4JUserSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.result.BackendCallResult;
-import org.metadatacenter.server.security.Authorization;
-import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
-import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.AuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.auth.NodePermission;
-import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.util.parameter.ParameterUtil;
 import play.mvc.Result;
-import utils.DataServices;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
+
 public class FolderController extends AbstractFolderServerController {
 
-  public static Result createFolder() {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.FOLDER_CREATE);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while creating the folder", e);
-      return forbiddenWithError(e);
-    }
+  public static Result createFolder() throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).have(CedarPermission.FOLDER_CREATE);
 
     try {
       JsonNode creationRequest = request().body().asJson();
@@ -59,7 +52,7 @@ public class FolderController extends AbstractFolderServerController {
             "You need to supply either path or folderId parameter (not both) identifying the parent folder"));
       }
 
-      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
       FolderServerFolder parentFolder = null;
 
       String normalizedPath = null;
@@ -109,7 +102,8 @@ public class FolderController extends AbstractFolderServerController {
             "There is already a node with the same name at the requested location!", errorParams));
       }
 
-      newFolder = folderSession.createFolderAsChildOfId(parentFolder.getId(), name, name, description, NodeLabel.FOLDER);
+      newFolder = folderSession.createFolderAsChildOfId(parentFolder.getId(), name, name, description, NodeLabel
+          .FOLDER);
 
       if (newFolder != null) {
         JsonNode createdFolder = JsonMapper.MAPPER.valueToTree(newFolder);
@@ -130,20 +124,14 @@ public class FolderController extends AbstractFolderServerController {
     }
   }
 
-  public static Result findFolder(String folderId) {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.FOLDER_READ);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while reading the folder", e);
-      return forbiddenWithError(e);
-    }
+  public static Result findFolder(String folderId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).have(CedarPermission.FOLDER_READ);
 
     try {
-      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
-      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+      PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
       FolderServerFolder folder = folderSession.findFolderById(folderId);
       if (folder == null) {
@@ -171,16 +159,10 @@ public class FolderController extends AbstractFolderServerController {
     }
   }
 
-  public static Result updateFolder(String folderId) {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.FOLDER_UPDATE);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while updating the folder", e);
-      return forbiddenWithError(e);
-    }
+  public static Result updateFolder(String folderId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).have(CedarPermission.FOLDER_UPDATE);
 
     try {
       JsonNode folderUpdateRequest = request().body().asJson();
@@ -189,7 +171,7 @@ public class FolderController extends AbstractFolderServerController {
             "You must supply the request body as a json object!"));
       }
 
-      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
       String name = null;
       JsonNode nameNode = folderUpdateRequest.get("name");
@@ -252,19 +234,13 @@ public class FolderController extends AbstractFolderServerController {
     }
   }
 
-  public static Result deleteFolder(String folderId) {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.FOLDER_DELETE);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while deleting the folder", e);
-      return forbiddenWithError(e);
-    }
+  public static Result deleteFolder(String folderId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
+    c.must(c.user()).have(CedarPermission.FOLDER_DELETE);
 
     try {
-      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
       FolderServerFolder folder = folderSession.findFolderById(folderId);
       if (folder == null) {
@@ -280,14 +256,6 @@ public class FolderController extends AbstractFolderServerController {
           return badRequest(generateErrorDescription("folderCanNotBeDeleted",
               "System folders can not be deleted", errorParams));
         } else {
-          //long contentCount = folderSession.findFolderContentsCount(folder.getId());
-          /*if (contentCount > 0) {
-            ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
-            errorParams.put("id", folderId);
-            errorParams.put("count", "contentCount");
-            return badRequest(generateErrorDescription("folderCanNotBeDeleted",
-                "Non-empty folders can not be deleted", errorParams));
-          }*/
           boolean deleted = folderSession.deleteFolderById(folderId);
           if (deleted) {
             return noContent();
@@ -306,20 +274,13 @@ public class FolderController extends AbstractFolderServerController {
     }
   }
 
-  public static Result getPermissions(String folderId) {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while reading the permissions of folder", e);
-      return forbiddenWithError(e);
-    }
+  public static Result getPermissions(String folderId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
-      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
-      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+      PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
       FolderServerFolder folder = folderSession.findFolderById(folderId);
       if (folder == null) {
@@ -338,16 +299,9 @@ public class FolderController extends AbstractFolderServerController {
     }
   }
 
-  public static Result updatePermissions(String folderId) {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while updating the folder permissions", e);
-      return forbiddenWithError(e);
-    }
+  public static Result updatePermissions(String folderId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
       JsonNode permissionUpdateRequest = request().body().asJson();
@@ -356,8 +310,8 @@ public class FolderController extends AbstractFolderServerController {
             "You must supply the request body as a json object!"));
       }
 
-      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
-      PermissionServiceSession permissionSession = DataServices.getInstance().getPermissionSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+      PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
       CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
           CedarNodePermissionsRequest.class);
@@ -369,7 +323,8 @@ public class FolderController extends AbstractFolderServerController {
         return notFound(generateErrorDescription("folderNotFound",
             "The folder can not be found by id:" + folderId, errorParams));
       } else {
-        BackendCallResult backendCallResult = permissionSession.updateNodePermissions(folderId, permissionsRequest, true);
+        BackendCallResult backendCallResult = permissionSession.updateNodePermissions(folderId, permissionsRequest,
+            true);
         if (backendCallResult.isError()) {
           return backendCallError(backendCallResult);
         }

@@ -2,45 +2,38 @@ package controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.lang3.StringUtils;
+import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
+import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.neo4j.FolderContentSortOptions;
-import org.metadatacenter.server.security.Authorization;
-import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
-import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.AuthRequest;
-import org.metadatacenter.server.security.model.auth.CedarPermission;
-import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.libs.F;
 import play.mvc.Result;
-import utils.DataServices;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
+
 public class FolderContentsController extends AbstractFolderServerController {
   private static Logger log = LoggerFactory.getLogger(FolderContentsController.class);
 
   public static Result findFolderContentsByPath(F.Option<String> pathParam, F.Option<String> resourceTypes, F
-      .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while creating the folder", e);
-      return forbiddenWithError(e);
-    }
+      .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) throws
+      CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
       // Test path
@@ -56,7 +49,7 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You need to specify path as a request parameter!");
       }
 
-      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
       String normalizedPath = folderSession.normalizePath(path);
       if (!normalizedPath.equals(path)) {
@@ -89,16 +82,9 @@ public class FolderContentsController extends AbstractFolderServerController {
   }
 
   public static Result findFolderContentsById(String id, F.Option<String> resourceTypes, F.Option<String>
-      sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) {
-    AuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while creating the folder", e);
-      return forbiddenWithError(e);
-    }
+      sort, F.Option<Integer> limitParam, F.Option<Integer> offsetParam) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
       if (id != null) {
@@ -109,7 +95,7 @@ public class FolderContentsController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You need to specify id as a request parameter!");
       }
 
-      FolderServiceSession folderSession = DataServices.getInstance().getFolderSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
       FolderServerFolder folder = folderSession.findFolderById(id);
       if (folder == null) {
@@ -137,10 +123,11 @@ public class FolderContentsController extends AbstractFolderServerController {
   }
 
 
-  private static Result findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String absoluteUrl,
+  private static Result findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String
+      absoluteUrl,
                                            List<FolderServerFolder> pathInfo, F.Option<String> resourceTypes, F
                                                .Option<String> sort, F.Option<Integer> limitParam, F.Option<Integer>
-                                               offsetParam) {
+                                               offsetParam) throws CedarAssertionException {
 
     // Test limit
     // TODO : set defaults from config here
