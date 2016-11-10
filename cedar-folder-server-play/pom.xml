@@ -14,12 +14,6 @@
   <name>CEDAR Folder Server Play</name>
   <packaging>play2</packaging>
 
-  <properties>
-
-    <cedar.version>0.8.3-SNAPSHOT</cedar.version>
-
-  </properties>
-
   <dependencies>
 
     <dependency>
