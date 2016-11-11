@@ -3,25 +3,24 @@ package controllers;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.constant.HttpConstants;
 import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.folderserver.CedarFSFolder;
-import org.metadatacenter.model.folderserver.CedarFSNode;
-import org.metadatacenter.model.folderserver.CedarFSResource;
+import org.metadatacenter.model.folderserver.FolderServerFolder;
+import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.request.NodeListRequest;
-import org.metadatacenter.model.response.FSNodeListResponse;
-import org.metadatacenter.server.neo4j.Neo4JUserSession;
+import org.metadatacenter.model.response.FolderServerNodeListResponse;
+import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.rest.exception.CedarAssertionException;
+import org.metadatacenter.server.FolderServiceSession;
+import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.result.BackendCallResult;
-import org.metadatacenter.server.security.Authorization;
-import org.metadatacenter.server.security.CedarAuthFromRequestFactory;
-import org.metadatacenter.server.security.exception.CedarAccessException;
-import org.metadatacenter.server.security.model.IAuthRequest;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
-import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.auth.NodePermission;
-import org.metadatacenter.server.security.model.user.CedarUser;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.util.parameter.ParameterUtil;
@@ -29,11 +28,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import play.libs.F;
 import play.mvc.Result;
-import utils.DataServices;
 
 import java.util.*;
 
+import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
+
 public class ResourceController extends AbstractFolderServerController {
+
   private static Logger log = LoggerFactory.getLogger(ResourceController.class);
 
   final static List<String> knownSortKeys;
@@ -47,16 +48,9 @@ public class ResourceController extends AbstractFolderServerController {
     knownSortKeys.add("lastUpdatedOnTS");
   }
 
-  public static Result createResource() {
-    IAuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while creating the resource", e);
-      return forbiddenWithError(e);
-    }
+  public static Result createResource() throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
       JsonNode creationRequest = request().body().asJson();
@@ -64,7 +58,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
       // get parentId
       String parentId = ParameterUtil.getStringOrThrowError(creationRequest, "parentId",
@@ -100,8 +94,8 @@ public class ResourceController extends AbstractFolderServerController {
       }
 
       // check existence of parent folder
-      CedarFSResource newResource = null;
-      CedarFSFolder parentFolder = neoSession.findFolderById(parentId);
+      FolderServerResource newResource = null;
+      FolderServerFolder parentFolder = folderSession.findFolderById(parentId);
 
       String candidatePath = null;
       if (parentFolder == null) {
@@ -113,7 +107,7 @@ public class ResourceController extends AbstractFolderServerController {
         // Later we will guarantee some kind of uniqueness for the resource names
         // Currently we allow duplicate names, the id is the PK
         NodeLabel nodeLabel = NodeLabel.forCedarNodeType(nodeType);
-        newResource = neoSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel);
+        newResource = folderSession.createResourceAsChildOfId(parentId, id, nodeType, name, description, nodeLabel);
       }
 
       if (newResource != null) {
@@ -139,16 +133,9 @@ public class ResourceController extends AbstractFolderServerController {
   }
 
   public static Result findAllNodes(F.Option<String> sortParam, F.Option<Integer> limitParam, F.Option<Integer>
-      offsetParam) {
-    IAuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while retrieving all resources", e);
-      return forbiddenWithError(e);
-    }
+      offsetParam) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     F.Option<Integer> none = new F.None<>();
     String absoluteUrl = routes.ResourceController.findAllNodes(sortParam, none, none).absoluteURL(request());
@@ -188,19 +175,19 @@ public class ResourceController extends AbstractFolderServerController {
       sortList.add(DEFAULT_SORT);
     }
 
-    Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
     // Retrieve all resources
-    List<CedarFSNode> resources = neoSession.findAllNodes(limit, offset, sortList);
+    List<FolderServerNode> resources = folderSession.findAllNodes(limit, offset, sortList);
 
     // Build response
-    FSNodeListResponse r = new FSNodeListResponse();
+    FolderServerNodeListResponse r = new FolderServerNodeListResponse();
     NodeListRequest req = new NodeListRequest();
     req.setLimit(limit);
     req.setOffset(offset);
     req.setSort(sortList);
     r.setRequest(req);
-    long total = neoSession.findAllNodesCount();
+    long total = folderSession.findAllNodesCount();
     r.setTotalCount(total);
     r.setCurrentOffset(offset);
     r.setResources(resources);
@@ -209,35 +196,29 @@ public class ResourceController extends AbstractFolderServerController {
     return ok(resp);
   }
 
-  public static Result findResource(String resourceId) {
-    IAuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while reading the resource", e);
-      return forbiddenWithError(e);
-    }
+  public static Result findResource(String resourceId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+      PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        neoSession.addPathAndParentId(resource);
-        if (neoSession.userHasReadAccessToResource(resourceId)) {
+        folderSession.addPathAndParentId(resource);
+        if (permissionSession.userHasReadAccessToResource(resourceId)) {
           resource.addCurrentUserPermission(NodePermission.READ);
         }
-        if (neoSession.userHasWriteAccessToResource(resourceId)) {
+        if (permissionSession.userHasWriteAccessToResource(resourceId)) {
           resource.addCurrentUserPermission(NodePermission.WRITE);
         }
-        if (neoSession.userIsOwnerOfResource(resourceId)) {
+        if (permissionSession.userIsOwnerOfResource(resourceId)) {
           resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
         }
         JsonNode folderNode = JsonMapper.MAPPER.valueToTree(resource);
@@ -249,16 +230,9 @@ public class ResourceController extends AbstractFolderServerController {
     }
   }
 
-  public static Result updateResource(String resourceId) {
-    IAuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while updating the resource", e);
-      return forbiddenWithError(e);
-    }
+  public static Result updateResource(String resourceId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
       JsonNode folderUpdateRequest = request().body().asJson();
@@ -266,7 +240,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
       String name = null;
       JsonNode nameNode = folderUpdateRequest.get("name");
@@ -290,7 +264,7 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the new description or the new name of the resource!");
       }
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
@@ -306,7 +280,8 @@ public class ResourceController extends AbstractFolderServerController {
           updateFields.put("displayName", name);
         }
         //TODO: fix this
-        CedarFSResource updatedFolder = neoSession.updateResourceById(resourceId, CedarNodeType.ELEMENT, updateFields);
+        FolderServerResource updatedFolder = folderSession.updateResourceById(resourceId, CedarNodeType.ELEMENT,
+            updateFields);
         if (updatedFolder == null) {
           return notFound();
         } else {
@@ -320,28 +295,21 @@ public class ResourceController extends AbstractFolderServerController {
     }
   }
 
-  public static Result deleteResource(String resourceId) {
-    IAuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while deleting the resource", e);
-      return forbiddenWithError(e);
-    }
+  public static Result deleteResource(String resourceId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        boolean deleted = neoSession.deleteResourceById(resourceId, CedarNodeType.ELEMENT);
+        boolean deleted = folderSession.deleteResourceById(resourceId, CedarNodeType.ELEMENT);
         if (deleted) {
           return noContent();
         } else {
@@ -357,28 +325,22 @@ public class ResourceController extends AbstractFolderServerController {
     }
   }
 
-  public static Result getPermissions(String resourceId) {
-    IAuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while reading the permissions of resource", e);
-      return forbiddenWithError(e);
-    }
+  public static Result getPermissions(String resourceId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+      PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        CedarNodePermissions permissions = neoSession.getNodePermissions(resourceId, false);
+        CedarNodePermissions permissions = permissionSession.getNodePermissions(resourceId, false);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }
@@ -388,16 +350,9 @@ public class ResourceController extends AbstractFolderServerController {
     }
   }
 
-  public static Result updatePermissions(String resourceId) {
-    IAuthRequest frontendRequest = null;
-    CedarUser currentUser = null;
-    try {
-      frontendRequest = CedarAuthFromRequestFactory.fromRequest(request());
-      currentUser = Authorization.getUserAndEnsurePermission(frontendRequest, CedarPermission.LOGGED_IN);
-    } catch (CedarAccessException e) {
-      play.Logger.error("Access Error while updating the resource permissions", e);
-      return forbiddenWithError(e);
-    }
+  public static Result updatePermissions(String resourceId) throws CedarAssertionException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request());
+    c.must(c.user()).be(LoggedIn);
 
     try {
       JsonNode permissionUpdateRequest = request().body().asJson();
@@ -405,23 +360,25 @@ public class ResourceController extends AbstractFolderServerController {
         throw new IllegalArgumentException("You must supply the request body as a json object!");
       }
 
-      Neo4JUserSession neoSession = DataServices.getInstance().getNeo4JSession(currentUser);
+      FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+      PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
       CedarNodePermissionsRequest permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest,
           CedarNodePermissionsRequest.class);
 
-      CedarFSResource resource = neoSession.findResourceById(resourceId);
+      FolderServerResource resource = folderSession.findResourceById(resourceId);
       if (resource == null) {
         ObjectNode errorParams = JsonNodeFactory.instance.objectNode();
         errorParams.put("id", resourceId);
         return notFound(generateErrorDescription("resourceNotFound",
             "The resource can not be found by id:" + resourceId, errorParams));
       } else {
-        BackendCallResult backendCallResult = neoSession.updateNodePermissions(resourceId, permissionsRequest, false);
+        BackendCallResult backendCallResult = permissionSession.updateNodePermissions(resourceId, permissionsRequest,
+            false);
         if (backendCallResult.isError()) {
           return backendCallError(backendCallResult);
         }
-        CedarNodePermissions permissions = neoSession.getNodePermissions(resourceId, false);
+        CedarNodePermissions permissions = permissionSession.getNodePermissions(resourceId, false);
         JsonNode permissionsNode = JsonMapper.MAPPER.valueToTree(permissions);
         return ok(permissionsNode);
       }

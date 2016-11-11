@@ -4,7 +4,8 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.server.play.AbstractCedarController;
 
 public class AbstractFolderServerController extends AbstractCedarController {
-  protected static CedarConfig cedarConfig;
+
+  protected static final CedarConfig cedarConfig;
 
   static {
     cedarConfig = CedarConfig.getInstance();
