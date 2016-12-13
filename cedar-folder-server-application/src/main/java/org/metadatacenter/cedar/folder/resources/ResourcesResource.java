@@ -18,6 +18,7 @@ import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.NodePermission;
+import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.util.parameter.ParameterUtil;
 
@@ -113,14 +114,8 @@ public class ResourcesResource {
     }
 
     if (newResource != null) {
-      // TODO: this is way too much for a URL ENCODE
       UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-      URI uri = null;
-      try {
-        uri = builder.path(URLEncoder.encode(id, "UTF-8")).build();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      URI uri = builder.path(CedarUrlUtil.urlEncode(id)).build();
       return Response.created(uri).entity(newResource).build();
     } else {
       Map<String, Object> errorParams = new HashMap<>();

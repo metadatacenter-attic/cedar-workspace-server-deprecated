@@ -13,6 +13,7 @@ import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.neo4j.FolderContentSortOptions;
+import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 
 import javax.servlet.http.HttpServletRequest;
@@ -122,15 +123,10 @@ public class FolderContentsResource {
     }
 
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI absoluteURI = null;
-    try {
-      absoluteURI = builder.path(URLEncoder.encode(id, "UTF-8"))
-          .queryParam("resource_types", resourceTypes)
-          .queryParam("sort", sort)
-          .build();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    URI absoluteURI = builder.path(CedarUrlUtil.urlEncode(id))
+        .queryParam("resource_types", resourceTypes)
+        .queryParam("sort", sort)
+        .build();
 
     List<FolderServerFolder> pathInfo = folderSession.findFolderPath(folder);
 

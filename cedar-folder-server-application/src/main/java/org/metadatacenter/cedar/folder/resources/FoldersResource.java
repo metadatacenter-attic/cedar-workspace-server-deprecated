@@ -19,6 +19,7 @@ import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
 import org.metadatacenter.server.security.model.auth.NodePermission;
+import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.util.parameter.ParameterUtil;
 
@@ -143,14 +144,8 @@ public class FoldersResource {
         .FOLDER);
 
     if (newFolder != null) {
-      // TODO: this is way too much for a URL ENCODE
       UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-      URI uri = null;
-      try {
-        uri = builder.path(URLEncoder.encode(newFolder.getId(), "UTF-8")).build();
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
+      URI uri = builder.path(CedarUrlUtil.urlEncode(newFolder.getId())).build();
       return Response.created(uri).entity(newFolder).build();
 
     } else {

@@ -1,6 +1,7 @@
 package org.metadatacenter.cedar.folder.resources;
 
 import com.codahale.metrics.annotation.Timed;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
@@ -22,6 +23,7 @@ import javax.ws.rs.core.*;
 import java.net.URI;
 
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
+import static org.metadatacenter.rest.assertion.GenericAssertions.NonEmpty;
 
 @Path("/command")
 @Produces(MediaType.APPLICATION_JSON)
@@ -72,16 +74,10 @@ public class CommandResource {
       throw new CedarAssertionException(new CedarAssertionResult(backendCallResult));
     }
 
-    // TODO: this is way too much for a URL ENCODE
-    // TODO: maybe this shoudl not be CREATRED.
+    // TODO: maybe this should not be CREATED.
     // TODO: if yes, what should be the returned location?
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI uri = null;
-    try {
-      uri = builder.path("").build();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    URI uri = builder.build();
 
     return Response.created(uri).build();
   }
