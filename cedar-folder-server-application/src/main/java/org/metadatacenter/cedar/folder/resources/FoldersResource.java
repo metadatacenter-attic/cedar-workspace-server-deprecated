@@ -5,12 +5,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.exception.CedarBackendException;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.rest.exception.CedarAssertionException;
-import org.metadatacenter.rest.exception.CedarAssertionResult;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
@@ -27,7 +28,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -302,7 +302,7 @@ public class FoldersResource {
         if (deleted) {
           return Response.status(Response.Status.NO_CONTENT).build();
         } else {
-          // TODO: check folder contents, if not, delete only if "?force=true" param is present
+          // TODO: check folder contents, if not, delete only if "?force=true" parameter is present
           Map<String, Object> errorParams = new HashMap<>();
           errorParams.put("id", id);
           errorParams.put("errorId", "folderNotDeleted");
@@ -339,7 +339,7 @@ public class FoldersResource {
   @PUT
   @Timed
   @Path("/{id}/permissions")
-  public Response updatePermissions(@PathParam("id") String folderId) throws CedarAssertionException {
+  public Response updatePermissions(@PathParam("id") String folderId) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -372,7 +372,7 @@ public class FoldersResource {
       BackendCallResult backendCallResult = permissionSession.updateNodePermissions(folderId, permissionsRequest,
           true);
       if (backendCallResult.isError()) {
-        throw new CedarAssertionException(new CedarAssertionResult(backendCallResult));
+        throw new CedarBackendException(backendCallResult);
       }
       CedarNodePermissions permissions = permissionSession.getNodePermissions(folderId, true);
       return Response.ok().entity(permissions).build();

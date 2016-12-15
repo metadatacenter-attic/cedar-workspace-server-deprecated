@@ -4,13 +4,14 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.bridge.CedarDataServices;
+import org.metadatacenter.exception.CedarBackendException;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.rest.exception.CedarAssertionException;
-import org.metadatacenter.rest.exception.CedarAssertionResult;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
@@ -26,7 +27,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.net.URI;
-import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -279,7 +279,7 @@ public class ResourcesResource {
   @PUT
   @Timed
   @Path("/{id}/permissions")
-  public Response updatePermissions(@PathParam("id") String id) throws CedarAssertionException {
+  public Response updatePermissions(@PathParam("id") String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -309,7 +309,7 @@ public class ResourcesResource {
       BackendCallResult backendCallResult = permissionSession.updateNodePermissions(id, permissionsRequest,
           false);
       if (backendCallResult.isError()) {
-        throw new CedarAssertionException(new CedarAssertionResult(backendCallResult));
+        throw new CedarBackendException(backendCallResult);
       }
       CedarNodePermissions permissions = permissionSession.getNodePermissions(id, false);
       return Response.ok().entity(permissions).build();

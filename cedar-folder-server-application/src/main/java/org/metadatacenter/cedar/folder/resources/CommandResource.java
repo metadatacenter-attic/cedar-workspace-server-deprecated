@@ -1,18 +1,18 @@
 package org.metadatacenter.cedar.folder.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.bridge.CedarDataServices;
+import org.metadatacenter.error.CedarErrorKey;
+import org.metadatacenter.exception.CedarBackendException;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.rest.assertion.noun.CedarRequestBody;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
-import org.metadatacenter.rest.exception.CedarAssertionException;
-import org.metadatacenter.rest.exception.CedarAssertionResult;
 import org.metadatacenter.server.FolderServiceSession;
-import org.metadatacenter.server.result.BackendCallErrorType;
+import org.metadatacenter.error.CedarErrorType;
 import org.metadatacenter.server.result.BackendCallResult;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,7 +23,6 @@ import javax.ws.rs.core.*;
 import java.net.URI;
 
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
-import static org.metadatacenter.rest.assertion.GenericAssertions.NonEmpty;
 
 @Path("/command")
 @Produces(MediaType.APPLICATION_JSON)
@@ -43,7 +42,7 @@ public class CommandResource {
   @POST
   @Timed
   @Path("/move-node-to-folder")
-  public Response moveNodeToFolder() throws CedarAssertionException {
+  public Response moveNodeToFolder() throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
 
     c.must(c.user()).be(LoggedIn);
@@ -68,10 +67,10 @@ public class CommandResource {
     }
     if (!moved) {
       BackendCallResult backendCallResult = new BackendCallResult();
-      backendCallResult.addError(BackendCallErrorType.SERVER_ERROR)
-          .subType("nodeNotMoved")
+      backendCallResult.addError(CedarErrorType.SERVER_ERROR)
+          .errorKey(CedarErrorKey.NODE_NOT_MOVED)
           .message("There was an error while moving the node");
-      throw new CedarAssertionException(new CedarAssertionResult(backendCallResult));
+      throw new CedarBackendException(backendCallResult);
     }
 
     // TODO: maybe this should not be CREATED.
