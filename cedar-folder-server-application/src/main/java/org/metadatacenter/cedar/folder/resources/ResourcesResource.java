@@ -50,7 +50,7 @@ public class ResourcesResource {
 
   @POST
   @Timed
-  public Response createResource() throws CedarAssertionException {
+  public Response createResource() throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
 
     c.must(c.user()).be(LoggedIn);
@@ -163,7 +163,7 @@ public class ResourcesResource {
   @PUT
   @Timed
   @Path("/{id}")
-  public Response updateResource(@PathParam("id") String id) throws CedarAssertionException {
+  public Response updateResource(@PathParam("id") String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 

@@ -52,7 +52,7 @@ public class FoldersResource {
 
   @POST
   @Timed
-  public Response createFolder() throws CedarAssertionException {
+  public Response createFolder() throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
 
     c.must(c.user()).be(LoggedIn);
@@ -196,7 +196,7 @@ public class FoldersResource {
   @PUT
   @Timed
   @Path("/{id}")
-  public Response updateFolder(@PathParam("id") String id) throws CedarAssertionException {
+  public Response updateFolder(@PathParam("id") String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.FOLDER_UPDATE);
