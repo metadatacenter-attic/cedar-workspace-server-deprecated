@@ -6,8 +6,12 @@ import io.dropwizard.setup.Environment;
 import org.metadatacenter.cedar.folder.health.FolderServerHealthCheck;
 import org.metadatacenter.cedar.folder.resources.*;
 import org.metadatacenter.cedar.util.dw.CedarDropwizardApplicationUtil;
+import org.metadatacenter.config.CedarConfig;
 
 public class FolderServerApplication extends Application<FolderServerConfiguration> {
+
+  private static CedarConfig cedarConfig;
+
   public static void main(String[] args) throws Exception {
     new FolderServerApplication().run(args);
   }
@@ -20,6 +24,8 @@ public class FolderServerApplication extends Application<FolderServerConfigurati
   @Override
   public void initialize(Bootstrap<FolderServerConfiguration> bootstrap) {
     CedarDropwizardApplicationUtil.setupKeycloak();
+
+    cedarConfig = CedarConfig.getInstance();
   }
 
   @Override
@@ -27,13 +33,14 @@ public class FolderServerApplication extends Application<FolderServerConfigurati
     final IndexResource index = new IndexResource();
     environment.jersey().register(index);
 
-    environment.jersey().register(new AccessibleNodesResource());
-    environment.jersey().register(new CommandResource());
-    environment.jersey().register(new FolderContentsResource());
-    environment.jersey().register(new FoldersResource());
-    environment.jersey().register(new NodesResource());
-    environment.jersey().register(new ResourcesResource());
-    environment.jersey().register(new UsersResource());
+    environment.jersey().register(new AccessibleNodesResource(cedarConfig));
+    environment.jersey().register(new CommandResource(cedarConfig));
+    environment.jersey().register(new FolderContentsResource(cedarConfig));
+    environment.jersey().register(new FoldersResource(cedarConfig));
+    environment.jersey().register(new NodesResource(cedarConfig));
+    environment.jersey().register(new ResourcesResource(cedarConfig));
+    environment.jersey().register(new SharedWithMeResource(cedarConfig));
+    environment.jersey().register(new UsersResource(cedarConfig));
 
     final FolderServerHealthCheck healthCheck = new FolderServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);

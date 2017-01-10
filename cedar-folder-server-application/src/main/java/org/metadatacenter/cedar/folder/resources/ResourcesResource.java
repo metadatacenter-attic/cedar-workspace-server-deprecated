@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.bridge.CedarDataServices;
+import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.CedarNodeType;
@@ -11,7 +12,6 @@ import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
-import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
@@ -23,9 +23,10 @@ import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.util.parameter.ParameterUtil;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -35,17 +36,10 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/resources")
 @Produces(MediaType.APPLICATION_JSON)
-public class ResourcesResource {
+public class ResourcesResource extends AbstractFolderServerResource {
 
-  private
-  @Context
-  UriInfo uriInfo;
-
-  private
-  @Context
-  HttpServletRequest request;
-
-  public ResourcesResource() {
+  public ResourcesResource(CedarConfig cedarConfig) {
+    super(cedarConfig);
   }
 
   @POST
@@ -131,7 +125,7 @@ public class ResourcesResource {
   @GET
   @Timed
   @Path("/{id}")
-  public Response findResource(@PathParam("id") String id) throws CedarAssertionException {
+  public Response findResource(@PathParam("id") String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -226,7 +220,7 @@ public class ResourcesResource {
   @DELETE
   @Timed
   @Path("/{id}")
-  public Response deleteResource(@PathParam("id") String id) throws CedarAssertionException {
+  public Response deleteResource(@PathParam("id") String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -256,7 +250,7 @@ public class ResourcesResource {
   @GET
   @Timed
   @Path("/{id}/permissions")
-  public Response getPermissions(@PathParam("id") String id) throws CedarAssertionException {
+  public Response getPermissions(@PathParam("id") String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 

@@ -2,21 +2,23 @@ package org.metadatacenter.cedar.folder.resources;
 
 import com.codahale.metrics.annotation.Timed;
 import org.metadatacenter.bridge.CedarDataServices;
+import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
-import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,15 +29,7 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/nodes")
 @Produces(MediaType.APPLICATION_JSON)
-public class NodesResource {
-
-  private
-  @Context
-  UriInfo uriInfo;
-
-  private
-  @Context
-  HttpServletRequest request;
+public class NodesResource extends AbstractFolderServerResource {
 
   final static List<String> knownSortKeys;
   public static final String DEFAULT_SORT;
@@ -48,14 +42,15 @@ public class NodesResource {
     knownSortKeys.add("lastUpdatedOnTS");
   }
 
-  public NodesResource() {
+  public NodesResource(CedarConfig cedarConfig) {
+    super(cedarConfig);
   }
 
   @GET
   @Timed
   public Response findAllNodes(@QueryParam("sort") Optional<String> sortParam,
                                @QueryParam("limit") Optional<Integer> limitParam,
-                               @QueryParam("offset") Optional<Integer> offsetParam) throws CedarAssertionException {
+                               @QueryParam("offset") Optional<Integer> offsetParam) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
 
     c.must(c.user()).be(LoggedIn);

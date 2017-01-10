@@ -11,7 +11,6 @@ import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
-import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
@@ -24,9 +23,10 @@ import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
 import org.metadatacenter.util.parameter.ParameterUtil;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,19 +35,10 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/folders")
 @Produces(MediaType.APPLICATION_JSON)
-public class FoldersResource {
+public class FoldersResource extends AbstractFolderServerResource {
 
-  private
-  @Context
-  UriInfo uriInfo;
-
-  private
-  @Context
-  HttpServletRequest request;
-
-  private static CedarConfig cedarConfig = CedarConfig.getInstance();
-
-  public FoldersResource() {
+  public FoldersResource(CedarConfig cedarConfig) {
+    super(cedarConfig);
   }
 
   @POST
@@ -162,7 +153,7 @@ public class FoldersResource {
   @GET
   @Timed
   @Path("/{id}")
-  public Response getFolder(@PathParam("id") String id) throws CedarAssertionException {
+  public Response getFolder(@PathParam("id") String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.FOLDER_READ);
@@ -275,7 +266,7 @@ public class FoldersResource {
   @DELETE
   @Timed
   @Path("/{id}")
-  public Response deleteFolder(@PathParam("id") String id) throws CedarAssertionException {
+  public Response deleteFolder(@PathParam("id") String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
     c.must(c.user()).have(CedarPermission.FOLDER_DELETE);
@@ -316,7 +307,7 @@ public class FoldersResource {
   @GET
   @Timed
   @Path("/{id}/permissions")
-  public Response getPermissions(@PathParam("id") String folderId) throws CedarAssertionException {
+  public Response getPermissions(@PathParam("id") String folderId) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
