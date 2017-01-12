@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -13,13 +14,8 @@
   <version>0.8.7-SNAPSHOT</version>
   <packaging>pom</packaging>
 
-  <name>CEDAR Template Server</name>
+  <name>CEDAR Folder Server</name>
   <description>CEDAR server to manage Folders</description>
-
-  <properties>
-    <!-- Do Not Remove This! We need it in Pom.scala -->
-    <scala.version>2.11.5</scala.version>
-  </properties>
 
   <scm>
     <connection>scm:git:git@github.com:metadatacenter/cedar-folder-server.git</connection>
@@ -30,7 +26,7 @@
 
   <modules>
     <module>cedar-folder-server-core</module>
-    <module>cedar-folder-server-play</module>
+    <module>cedar-folder-server-application</module>
   </modules>
 
 </project>
