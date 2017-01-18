@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/resources")
@@ -125,7 +126,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @GET
   @Timed
   @Path("/{id}")
-  public Response findResource(@PathParam("id") String id) throws CedarException {
+  public Response findResource(@PathParam(PP_ID) String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -157,7 +158,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @PUT
   @Timed
   @Path("/{id}")
-  public Response updateResource(@PathParam("id") String id) throws CedarException {
+  public Response updateResource(@PathParam(PP_ID) String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -220,7 +221,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @DELETE
   @Timed
   @Path("/{id}")
-  public Response deleteResource(@PathParam("id") String id) throws CedarException {
+  public Response deleteResource(@PathParam(PP_ID) String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -250,7 +251,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @GET
   @Timed
   @Path("/{id}/permissions")
-  public Response getPermissions(@PathParam("id") String id) throws CedarException {
+  public Response getPermissions(@PathParam(PP_ID) String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
@@ -273,7 +274,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @PUT
   @Timed
   @Path("/{id}/permissions")
-  public Response updatePermissions(@PathParam("id") String id) throws CedarException {
+  public Response updatePermissions(@PathParam(PP_ID) String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 

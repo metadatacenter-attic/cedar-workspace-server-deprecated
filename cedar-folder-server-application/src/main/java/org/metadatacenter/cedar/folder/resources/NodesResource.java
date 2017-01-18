@@ -25,6 +25,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.metadatacenter.constant.CedarQueryParameters.QP_LIMIT;
+import static org.metadatacenter.constant.CedarQueryParameters.QP_OFFSET;
+import static org.metadatacenter.constant.CedarQueryParameters.QP_SORT;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/nodes")
@@ -48,15 +51,15 @@ public class NodesResource extends AbstractFolderServerResource {
 
   @GET
   @Timed
-  public Response findAllNodes(@QueryParam("sort") Optional<String> sortParam,
-                               @QueryParam("limit") Optional<Integer> limitParam,
-                               @QueryParam("offset") Optional<Integer> offsetParam) throws CedarException {
+  public Response findAllNodes(@QueryParam(QP_SORT) Optional<String> sortParam,
+                               @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
+                               @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
 
     c.must(c.user()).be(LoggedIn);
 
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI absoluteURI = builder.queryParam("sort", sortParam).build();
+    URI absoluteURI = builder.queryParam(QP_SORT, sortParam).build();
 
     // TODO : set default values for input parameters from config
     int limit = 50;

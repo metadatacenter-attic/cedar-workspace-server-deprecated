@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import org.apache.commons.lang3.StringUtils;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.constant.CedarQueryParameters;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
@@ -27,6 +28,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
+import static org.metadatacenter.constant.CedarQueryParameters.*;
+import static org.metadatacenter.constant.CedarQueryParameters.QP_RESOURCE_TYPES;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 
@@ -41,11 +45,11 @@ public class FolderContentsResource extends AbstractFolderServerResource {
   @GET
   @Timed
   @Path("/contents")
-  public Response findFolderContentsByPath(@QueryParam("path") Optional<String> pathParam,
-                                           @QueryParam("resource_types") Optional<String> resourceTypes,
-                                           @QueryParam("sort") Optional<String> sort,
-                                           @QueryParam("limit") Optional<Integer> limitParam,
-                                           @QueryParam("offset") Optional<Integer> offsetParam) throws
+  public Response findFolderContentsByPath(@QueryParam(QP_PATH) Optional<String> pathParam,
+                                           @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
+                                           @QueryParam(QP_SORT) Optional<String> sort,
+                                           @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
+                                           @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
       CedarException {
 
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
@@ -77,9 +81,9 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     }
 
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI absoluteURI = builder.queryParam("path", pathParam)
-        .queryParam("resource_types", resourceTypes)
-        .queryParam("sort", sort)
+    URI absoluteURI = builder.queryParam(QP_PATH, pathParam)
+        .queryParam(QP_RESOURCE_TYPES, resourceTypes)
+        .queryParam(QP_SORT, sort)
         .build();
 
     List<FolderServerFolder> pathInfo = folderSession.findFolderPathByPath(path);
@@ -91,11 +95,11 @@ public class FolderContentsResource extends AbstractFolderServerResource {
   @GET
   @Timed
   @Path("/{id}/contents")
-  public Response findFolderContentsById(@PathParam("id") String id,
-                                         @QueryParam("resource_types") Optional<String> resourceTypes,
-                                         @QueryParam("sort") Optional<String> sort,
-                                         @QueryParam("limit") Optional<Integer> limitParam,
-                                         @QueryParam("offset") Optional<Integer> offsetParam) throws
+  public Response findFolderContentsById(@PathParam(PP_ID) String id,
+                                         @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
+                                         @QueryParam(QP_SORT) Optional<String> sort,
+                                         @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
+                                         @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
       CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
@@ -117,8 +121,8 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
     URI absoluteURI = builder.path(CedarUrlUtil.urlEncode(id))
-        .queryParam("resource_types", resourceTypes)
-        .queryParam("sort", sort)
+        .queryParam(QP_RESOURCE_TYPES, resourceTypes)
+        .queryParam(QP_SORT, sort)
         .build();
 
     List<FolderServerFolder> pathInfo = folderSession.findFolderPath(folder);

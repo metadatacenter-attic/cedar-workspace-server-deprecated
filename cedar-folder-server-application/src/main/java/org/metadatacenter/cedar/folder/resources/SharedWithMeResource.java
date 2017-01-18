@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static org.metadatacenter.constant.CedarQueryParameters.*;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/view")
@@ -43,10 +44,10 @@ public class SharedWithMeResource extends AbstractFolderServerResource {
   @GET
   @Timed
   @Path("/shared-with-me")
-  public Response sharedWithMe(@QueryParam("resource_types") Optional<String> resourceTypes,
-                                       @QueryParam("sort") Optional<String> sort,
-                                       @QueryParam("limit") Optional<Integer> limitParam,
-                                       @QueryParam("offset") Optional<Integer> offsetParam) throws
+  public Response sharedWithMe(@QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
+                               @QueryParam(QP_SORT) Optional<String> sort,
+                               @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
+                               @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
       CedarException {
 
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
@@ -151,10 +152,10 @@ public class SharedWithMeResource extends AbstractFolderServerResource {
 
     //TODO: document why it is useful
     CedarURIBuilder builder = new CedarURIBuilder(uriInfo)
-        .queryParam("resource_types", resourceTypes)
-        .queryParam("sort", sort)
-        .queryParam("limit", limitParam)
-        .queryParam("offset", offsetParam);
+        .queryParam(QP_RESOURCE_TYPES, resourceTypes)
+        .queryParam(QP_SORT, sort)
+        .queryParam(QP_LIMIT, limitParam)
+        .queryParam(QP_OFFSET, offsetParam);
 
     String absoluteUrl = builder.build().toString();
 
