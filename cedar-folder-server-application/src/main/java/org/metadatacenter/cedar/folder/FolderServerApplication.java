@@ -3,6 +3,7 @@ package org.metadatacenter.cedar.folder;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.folder.health.FolderServerHealthCheck;
 import org.metadatacenter.cedar.folder.resources.*;
 import org.metadatacenter.cedar.util.dw.CedarDropwizardApplicationUtil;
@@ -23,9 +24,10 @@ public class FolderServerApplication extends Application<FolderServerConfigurati
 
   @Override
   public void initialize(Bootstrap<FolderServerConfiguration> bootstrap) {
-    CedarDropwizardApplicationUtil.setupKeycloak();
-
     cedarConfig = CedarConfig.getInstance();
+    CedarDataServices.getInstance(cedarConfig);
+
+    CedarDropwizardApplicationUtil.setupKeycloak();
   }
 
   @Override
