@@ -5,6 +5,7 @@ import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
@@ -103,6 +104,7 @@ public class NodesResource extends AbstractFolderServerResource {
 
     // Build response
     FolderServerNodeListResponse r = new FolderServerNodeListResponse();
+    r.setNodeListQueryType(NodeListQueryType.ALL_NODES);
     NodeListRequest req = new NodeListRequest();
     req.setLimit(limit);
     req.setOffset(offset);

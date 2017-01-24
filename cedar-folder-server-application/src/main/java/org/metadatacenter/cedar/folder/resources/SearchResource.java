@@ -14,6 +14,8 @@ import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.rest.exception.CedarAssertionException;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.neo4j.FolderContentSortOptions;
+import org.metadatacenter.model.request.NodeListQueryType;
+import org.metadatacenter.model.request.NodeListQueryTypeDetector;
 import org.metadatacenter.util.http.CedarURIBuilder;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 
@@ -31,24 +33,24 @@ import java.util.Optional;
 import static org.metadatacenter.constant.CedarQueryParameters.*;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
-@Path("/view")
+@Path("/")
 @Produces(MediaType.APPLICATION_JSON)
-public class SharedWithMeResource extends AbstractFolderServerResource {
+public class SearchResource extends AbstractFolderServerResource {
 
-  private static final String VIEW_SHARED_WITH_ME = "view/shared-with-me/";
-
-  public SharedWithMeResource(CedarConfig cedarConfig) {
+  public SearchResource(CedarConfig cedarConfig) {
     super(cedarConfig);
   }
 
   @GET
   @Timed
-  @Path("/shared-with-me")
-  public Response sharedWithMe(@QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
+  @Path("/search")
+  public Response sharedWithMe(@QueryParam(QP_Q) Optional<String> q,
+                               @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
+                               @QueryParam(QP_DERIVED_FROM_ID) Optional<String> derivedFromId,
                                @QueryParam(QP_SORT) Optional<String> sort,
                                @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
-                               @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
-      CedarException {
+                               @QueryParam(QP_OFFSET) Optional<Integer> offsetParam,
+                               @QueryParam(QP_SHARING) Optional<String> sharing) throws CedarException {
 
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
@@ -131,22 +133,34 @@ public class SharedWithMeResource extends AbstractFolderServerResource {
     req.setLimit(limit);
     req.setOffset(offset);
     req.setSort(sortList);
+    req.setQ(q.orElse(null));
+    req.setDerivedFromId(derivedFromId.orElse(null));
 
     r.setRequest(req);
 
+    NodeListQueryType nlqt = NodeListQueryTypeDetector.detect(q, derivedFromId, sharing);
+    r.setNodeListQueryType(nlqt);
+
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
-    List<FolderServerNode> resources = folderSession.findSharedWithMe(nodeTypeList, limit, offset,
-        sortList);
+    List<FolderServerNode> resources = null;
+    long total = 0;
 
-    long total = folderSession.findSharedWithMeCount(nodeTypeList);
+    if (nlqt == NodeListQueryType.VIEW_SHARED_WITH_ME) {
+      resources = folderSession.viewSharedWithMe(nodeTypeList, limit, offset, sortList);
+      total = folderSession.viewSharedWithMeCount(nodeTypeList);
+    } else if (nlqt == NodeListQueryType.VIEW_ALL) {
+      resources = folderSession.viewAll(nodeTypeList, limit, offset, sortList);
+      total = folderSession.viewAllCount(nodeTypeList);
+    }
+
 
     r.setTotalCount(total);
     r.setCurrentOffset(offset);
 
     r.setResources(resources);
 
-    //TODO: indicate, that this is a view, nto a real path
+    //TODO: indicate, that this is a view, not a real path
     //TODO: we should do the same for the search results as well
     //r.setPathInfo(null);
 

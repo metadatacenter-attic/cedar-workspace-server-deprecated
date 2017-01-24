@@ -9,6 +9,7 @@ import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
@@ -207,6 +208,7 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     }
 
     FolderServerNodeListResponse r = new FolderServerNodeListResponse();
+    r.setNodeListQueryType(NodeListQueryType.FOLDER_CONTENT);
 
     NodeListRequest req = new NodeListRequest();
     req.setNodeTypes(nodeTypeList);
