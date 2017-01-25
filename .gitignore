@@ -19,3 +19,4 @@ CEDAR_HOME_IS_UNDEFINED
 pom.xml.releaseBackup
 release.properties
 pom.xml.versionsBackup
+cedar-folder-server-application/dependency-reduced-pom.xml
