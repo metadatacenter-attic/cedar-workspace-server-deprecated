@@ -5,32 +5,27 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-parent</artifactId>
-    <version>0.8.6</version>
+    <version>0.9.1</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
   <artifactId>cedar-folder-server</artifactId>
-  <version>0.8.6</version>
+  <version>0.9.1</version>
   <packaging>pom</packaging>
 
-  <name>CEDAR Template Server</name>
+  <name>CEDAR Folder Server</name>
   <description>CEDAR server to manage Folders</description>
-
-  <properties>
-    <!-- Do Not Remove This! We need it in Pom.scala -->
-    <scala.version>2.11.5</scala.version>
-  </properties>
 
   <scm>
     <connection>scm:git:git@github.com:metadatacenter/cedar-folder-server.git</connection>
     <developerConnection>scm:git:git@github.com:metadatacenter/cedar-folder-server.git</developerConnection>
     <url>https://github.com/metadatacenter/cedar-folder-server</url>
-    <tag>release-0.8.6</tag>
+    <tag>release-0.9.1</tag>
   </scm>
 
   <modules>
     <module>cedar-folder-server-core</module>
-    <module>cedar-folder-server-play</module>
+    <module>cedar-folder-server-application</module>
   </modules>
 
 </project>
