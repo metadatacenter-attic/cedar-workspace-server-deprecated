@@ -4,8 +4,9 @@ import com.codahale.metrics.annotation.Timed;
 import org.apache.commons.lang3.StringUtils;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
-import org.metadatacenter.constant.CedarQueryParameters;
+import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
@@ -16,6 +17,7 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.neo4j.FolderContentSortOptions;
+import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 
@@ -31,7 +33,6 @@ import java.util.Optional;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
 import static org.metadatacenter.constant.CedarQueryParameters.*;
-import static org.metadatacenter.constant.CedarQueryParameters.QP_RESOURCE_TYPES;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 
@@ -43,7 +44,7 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     super(cedarConfig);
   }
 
-  @GET
+  /*@GET
   @Timed
   @Path("/contents")
   public Response findFolderContentsByPath(@QueryParam(QP_PATH) Optional<String> pathParam,
@@ -78,7 +79,7 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     FolderServerFolder folder = folderSession.findFolderByPath(path);
     if (folder == null) {
-      return Response.status(Response.Status.NOT_FOUND).build();
+      return CedarResponse.notFound().build();
     }
 
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
@@ -92,6 +93,7 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, resourceTypes, sort, limitParam,
         offsetParam);
   }
+  */
 
   @GET
   @Timed
@@ -110,14 +112,18 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     }
 
     if (id == null || id.length() == 0) {
-      throw new IllegalArgumentException("You need to specify id as a request parameter!");
+      throw new CedarProcessingException("You need to specify id as a request parameter!");
     }
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
     FolderServerFolder folder = folderSession.findFolderById(id);
     if (folder == null) {
-      return Response.status(Response.Status.NOT_FOUND).build();
+      return CedarResponse.notFound()
+          .id(id)
+          .errorKey(CedarErrorKey.FOLDER_NOT_FOUND)
+          .errorMessage("The folder can not be found by id")
+          .build();
     }
 
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
@@ -229,7 +235,6 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     r.setResources(resources);
 
     r.setPathInfo(pathInfo);
-
 
     r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
 
