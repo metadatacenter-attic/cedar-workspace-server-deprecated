@@ -9,6 +9,7 @@ import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.FolderOrResource;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
@@ -266,7 +267,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .errorMessage("The resource can not be found by id")
           .build();
     } else {
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, false);
+      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, FolderOrResource.RESOURCE);
       return Response.ok().entity(permissions).build();
     }
   }
@@ -300,11 +301,11 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     } else {
       BackendCallResult backendCallResult = permissionSession.updateNodePermissions(id, permissionsRequest,
-          false);
+          FolderOrResource.RESOURCE);
       if (backendCallResult.isError()) {
         throw new CedarBackendException(backendCallResult);
       }
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, false);
+      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, FolderOrResource.RESOURCE);
       return Response.ok().entity(permissions).build();
     }
   }
