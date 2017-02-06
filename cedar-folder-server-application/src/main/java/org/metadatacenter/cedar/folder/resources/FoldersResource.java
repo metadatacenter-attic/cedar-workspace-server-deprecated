@@ -134,6 +134,8 @@ public class FoldersResource extends AbstractFolderServerResource {
           .parameter("name", name)
           .errorKey(CedarErrorKey.NODE_ALREADY_PRESENT)
           .errorMessage("There is already a node with the same name at the requested location!")
+          .parameter("conflictingNodeType", newFolderCandidate.getType().getValue())
+          .parameter("conflictingNodeId", newFolderCandidate.getId())
           .build();
     }
 
