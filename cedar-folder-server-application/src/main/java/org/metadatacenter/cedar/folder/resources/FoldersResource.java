@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
+import org.metadatacenter.error.CedarErrorReasonKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.FolderOrResource;
@@ -279,19 +280,33 @@ public class FoldersResource extends AbstractFolderServerResource {
           .errorMessage("The folder can not be found by id")
           .build();
     } else {
-      if (folder.isSystem()) {
+      long contentCount = folderSession.findFolderContentsCount(id);
+      if (contentCount > 0) {
         return CedarResponse.badRequest()
             .id(id)
             .errorKey(CedarErrorKey.FOLDER_CAN_NOT_BE_DELETED)
+            .errorReasonKey(CedarErrorReasonKey.NON_EMPTY_FOLDER)
+            .errorMessage("Non-empty folders can not be deleted")
+            .build();
+      } else if (folder.isUserHome()) {
+        return CedarResponse.badRequest()
+            .id(id)
+            .errorKey(CedarErrorKey.FOLDER_CAN_NOT_BE_DELETED)
+            .errorReasonKey(CedarErrorReasonKey.USER_HOME_FOLDER)
+            .errorMessage("User home folders can not be deleted")
+            .build();
+      } else if (folder.isSystem()) {
+        return CedarResponse.badRequest()
+            .id(id)
+            .errorKey(CedarErrorKey.FOLDER_CAN_NOT_BE_DELETED)
+            .errorReasonKey(CedarErrorReasonKey.SYSTEM_FOLDER)
             .errorMessage("System folders can not be deleted")
-            .parameter("folderType", "system")
             .build();
       } else {
         boolean deleted = folderSession.deleteFolderById(id);
         if (deleted) {
           return CedarResponse.noContent().build();
         } else {
-          // TODO: check folder contents, if not, delete only if "?force=true" parameter is present
           return CedarResponse.internalServerError()
               .id(id)
               .errorKey(CedarErrorKey.FOLDER_NOT_DELETED)
