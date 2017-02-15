@@ -97,7 +97,7 @@ public class FolderContentsResource extends AbstractFolderServerResource {
   @Path("/{id}/contents")
   public Response findFolderContentsById(@PathParam(PP_ID) String id,
                                          @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
-                                         @QueryParam(QP_SORT) Optional<String> sort,
+                                         @QueryParam(QP_SORT) Optional<String> sortParam,
                                          @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
                                          @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
       CedarException {
@@ -112,6 +112,9 @@ public class FolderContentsResource extends AbstractFolderServerResource {
       throw new CedarProcessingException("You need to specify id as a request parameter!");
     }
 
+    PagedSearchQuery psq = new PagedSearchQuery(resourceTypes, sortParam, limitParam, offsetParam);
+    psq.validate();
+
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
     FolderServerFolder folder = folderSession.findFolderById(id);
@@ -124,25 +127,20 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     }
 
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI absoluteURI = builder.path(CedarUrlUtil.urlEncode(id))
-        .queryParam(QP_RESOURCE_TYPES, resourceTypes)
-        .queryParam(QP_SORT, sort)
+    URI absoluteURI = builder
+        .queryParam(QP_RESOURCE_TYPES, psq.getNodeTypesAsList())
+        .queryParam(QP_SORT, psq.getSortListAsString())
         .build();
 
     List<FolderServerFolder> pathInfo = folderSession.findFolderPath(folder);
 
-    return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, resourceTypes, sort, limitParam,
-        offsetParam);
+    return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, psq);
   }
 
 
   private Response findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String
-      absoluteUrl, List<FolderServerFolder> pathInfo, Optional<String> resourceTypes, Optional<String> sort,
-                                      Optional<Integer> limitParam, Optional<Integer> offsetParam) throws
+      absoluteUrl, List<FolderServerFolder> pathInfo, PagedSearchQuery psq) throws
       CedarException {
-
-    PagedSearchQuery psq = new PagedSearchQuery(resourceTypes, sort, limitParam, offsetParam);
-    psq.validate();
 
     int limit = psq.getLimit();
     int offset = psq.getOffset();
