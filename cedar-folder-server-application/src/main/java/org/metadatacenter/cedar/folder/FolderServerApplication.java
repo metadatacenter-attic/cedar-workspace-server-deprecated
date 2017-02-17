@@ -1,17 +1,13 @@
 package org.metadatacenter.cedar.folder;
 
-import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.folder.health.FolderServerHealthCheck;
 import org.metadatacenter.cedar.folder.resources.*;
-import org.metadatacenter.cedar.util.dw.CedarDropwizardApplicationUtil;
-import org.metadatacenter.config.CedarConfig;
+import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 
-public class FolderServerApplication extends Application<FolderServerConfiguration> {
-
-  private static CedarConfig cedarConfig;
+public class FolderServerApplication extends CedarMicroserviceApplication<FolderServerConfiguration> {
 
   public static void main(String[] args) throws Exception {
     new FolderServerApplication().run(args);
@@ -19,19 +15,16 @@ public class FolderServerApplication extends Application<FolderServerConfigurati
 
   @Override
   public String getName() {
-    return "folder-server";
+    return "cedar-folder-server";
   }
 
   @Override
-  public void initialize(Bootstrap<FolderServerConfiguration> bootstrap) {
-    cedarConfig = CedarConfig.getInstance();
-    CedarDataServices.getInstance(cedarConfig);
-
-    CedarDropwizardApplicationUtil.setupKeycloak();
+  public void initializeApp(Bootstrap<FolderServerConfiguration> bootstrap) {
+    CedarDataServices.initializeFolderServices(cedarConfig);
   }
 
   @Override
-  public void run(FolderServerConfiguration configuration, Environment environment) {
+  public void runApp(FolderServerConfiguration configuration, Environment environment) {
     final IndexResource index = new IndexResource();
     environment.jersey().register(index);
 
@@ -46,7 +39,5 @@ public class FolderServerApplication extends Application<FolderServerConfigurati
 
     final FolderServerHealthCheck healthCheck = new FolderServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
-
-    CedarDropwizardApplicationUtil.setupEnvironment(environment);
   }
 }

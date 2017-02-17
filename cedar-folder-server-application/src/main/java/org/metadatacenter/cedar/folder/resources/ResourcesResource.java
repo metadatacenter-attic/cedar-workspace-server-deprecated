@@ -9,6 +9,7 @@ import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.FolderOrResource;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
@@ -21,6 +22,7 @@ import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.NodePermission;
+import org.metadatacenter.util.CedarNodeTypeUtil;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -30,7 +32,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,13 +75,13 @@ public class ResourcesResource extends AbstractFolderServerResource {
     String nodeTypeString = nodeTypeP.stringValue();
 
     CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
-    if (nodeType == null) {
-      StringBuilder sb = new StringBuilder();
-      Arrays.asList(CedarNodeType.values()).forEach(crt -> sb.append(crt.getValue()).append(","));
+    if (!CedarNodeTypeUtil.isValidForRestCall(nodeType)) {
       return CedarResponse.badRequest()
+          .errorMessage("You passed an illegal nodeType:'" + nodeTypeString +
+              "'. The allowed values are:" + CedarNodeTypeUtil.getValidNodeTypesForRestCalls())
           .errorKey(CedarErrorKey.INVALID_NODE_TYPE)
-          .parameter("nodeType", nodeTypeString)
-          .errorMessage("The supplied node type is invalid! It should be one of:" + sb.toString())
+          .parameter("invalidNodeTypes", nodeTypeString)
+          .parameter("allowedNodeTypes", CedarNodeTypeUtil.getValidNodeTypeValuesForRestCalls())
           .build();
     }
 
@@ -266,7 +267,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .errorMessage("The resource can not be found by id")
           .build();
     } else {
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, false);
+      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, FolderOrResource.RESOURCE);
       return Response.ok().entity(permissions).build();
     }
   }
@@ -300,11 +301,11 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     } else {
       BackendCallResult backendCallResult = permissionSession.updateNodePermissions(id, permissionsRequest,
-          false);
+          FolderOrResource.RESOURCE);
       if (backendCallResult.isError()) {
         throw new CedarBackendException(backendCallResult);
       }
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, false);
+      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, FolderOrResource.RESOURCE);
       return Response.ok().entity(permissions).build();
     }
   }
