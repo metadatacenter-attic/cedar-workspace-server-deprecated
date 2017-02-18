@@ -26,6 +26,8 @@ import org.metadatacenter.server.security.model.auth.NodePermission;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -42,6 +44,8 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.NonEmpty;
 @Path("/folders")
 @Produces(MediaType.APPLICATION_JSON)
 public class FoldersResource extends AbstractFolderServerResource {
+
+  private static final Logger log = LoggerFactory.getLogger(FoldersResource.class);
 
   public FoldersResource(CedarConfig cedarConfig) {
     super(cedarConfig);
@@ -358,7 +362,7 @@ public class FoldersResource extends AbstractFolderServerResource {
       JsonNode permissionUpdateRequest = c.request().getRequestBody().asJson();
       permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest, CedarNodePermissionsRequest.class);
     } catch (JsonProcessingException e) {
-      e.printStackTrace();
+      log.error("Error while reading permission update request", e);
     }
 
     FolderServerFolder folder = folderSession.findFolderById(folderId);
