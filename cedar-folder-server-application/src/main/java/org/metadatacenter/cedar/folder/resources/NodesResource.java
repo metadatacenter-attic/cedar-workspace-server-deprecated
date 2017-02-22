@@ -12,6 +12,7 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.util.http.LinkHeaderUtil;
+import org.metadatacenter.util.http.PagedSortedQuery;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -21,30 +22,15 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-import static org.metadatacenter.constant.CedarQueryParameters.QP_LIMIT;
-import static org.metadatacenter.constant.CedarQueryParameters.QP_OFFSET;
-import static org.metadatacenter.constant.CedarQueryParameters.QP_SORT;
+import static org.metadatacenter.constant.CedarQueryParameters.*;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 
 @Path("/nodes")
 @Produces(MediaType.APPLICATION_JSON)
 public class NodesResource extends AbstractFolderServerResource {
-
-  final static List<String> knownSortKeys;
-  public static final String DEFAULT_SORT;
-
-  static {
-    DEFAULT_SORT = "name";
-    knownSortKeys = new ArrayList<>();
-    knownSortKeys.add("name");
-    knownSortKeys.add("createdOnTS");
-    knownSortKeys.add("lastUpdatedOnTS");
-  }
 
   public NodesResource(CedarConfig cedarConfig) {
     super(cedarConfig);
@@ -62,40 +48,16 @@ public class NodesResource extends AbstractFolderServerResource {
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
     URI absoluteURI = builder.queryParam(QP_SORT, sortParam).build();
 
-    // TODO : set default values for input parameters from config
-    int limit = 50;
-    int maxAllowedLimit = 50000;
-    int offset = 0;
+    PagedSortedQuery pagedSortedQuery = new PagedSortedQuery(
+        cedarConfig.getFolderRESTAPI().getPagination())
+        .sort(sortParam)
+        .limit(limitParam)
+        .offset(offsetParam);
+    pagedSortedQuery.validate();
 
-    // Input parameter validation: 'limit'
-    if (limitParam.isPresent()) {
-      if (limitParam.get() <= 0) {
-        throw new IllegalArgumentException("You should specify a positive limit!");
-      } else if (limitParam.get() > maxAllowedLimit) {
-        throw new IllegalArgumentException("You should specify a limit smaller than " + maxAllowedLimit + "!");
-      }
-      limit = limitParam.get();
-    }
-    // Input parameter validation: 'offset'
-    if (offsetParam.isPresent()) {
-      if (offsetParam.get() < 0) {
-        throw new IllegalArgumentException("You should specify a positive or zero offset!");
-      }
-      offset = offsetParam.get();
-    }
-    // Input parameter validation: 'sort'
-    List<String> sortList = new ArrayList<>();
-    if (sortParam.isPresent()) {
-      sortList = Arrays.asList(sortParam.get().split("\\s*,\\s*"));
-      for (String s : sortList) {
-        if (!knownSortKeys.contains(s) && !knownSortKeys.contains("-" + s)) {
-          throw new IllegalArgumentException("You passed an illegal sort type: '" + s + "'. The allowed values are:" +
-              knownSortKeys);
-        }
-      }
-    } else {
-      sortList.add(DEFAULT_SORT);
-    }
+    int limit = pagedSortedQuery.getLimit();
+    int offset = pagedSortedQuery.getOffset();
+    List<String> sortList = pagedSortedQuery.getSortList();
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 

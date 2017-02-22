@@ -15,10 +15,7 @@ import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
-import org.metadatacenter.util.http.CedarResponse;
-import org.metadatacenter.util.http.CedarUrlUtil;
-import org.metadatacenter.util.http.LinkHeaderUtil;
-import org.metadatacenter.util.http.PagedSearchQuery;
+import org.metadatacenter.util.http.*;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -112,8 +109,13 @@ public class FolderContentsResource extends AbstractFolderServerResource {
       throw new CedarProcessingException("You need to specify id as a request parameter!");
     }
 
-    PagedSearchQuery psq = new PagedSearchQuery(resourceTypes, sortParam, limitParam, offsetParam);
-    psq.validate();
+    PagedSortedTypedQuery pagedSortedTypedQuery = new PagedSortedTypedQuery(
+        cedarConfig.getFolderRESTAPI().getPagination())
+        .resourceTypes(resourceTypes)
+        .sort(sortParam)
+        .limit(limitParam)
+        .offset(offsetParam);
+    pagedSortedTypedQuery.validate();
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
@@ -128,24 +130,24 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
     URI absoluteURI = builder
-        .queryParam(QP_RESOURCE_TYPES, psq.getNodeTypesAsList())
-        .queryParam(QP_SORT, psq.getSortListAsString())
+        .queryParam(QP_RESOURCE_TYPES, pagedSortedTypedQuery.getNodeTypesAsString())
+        .queryParam(QP_SORT, pagedSortedTypedQuery.getSortListAsString())
         .build();
 
     List<FolderServerFolder> pathInfo = folderSession.findFolderPath(folder);
 
-    return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, psq);
+    return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, pagedSortedTypedQuery);
   }
 
 
   private Response findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String
-      absoluteUrl, List<FolderServerFolder> pathInfo, PagedSearchQuery psq) throws
+      absoluteUrl, List<FolderServerFolder> pathInfo, PagedSortedTypedQuery pagedSortedTypedQuery) throws
       CedarException {
 
-    int limit = psq.getLimit();
-    int offset = psq.getOffset();
-    List<String> sortList = psq.getSortList();
-    List<CedarNodeType> nodeTypeList = psq.getNodeTypeList();
+    int limit = pagedSortedTypedQuery.getLimit();
+    int offset = pagedSortedTypedQuery.getOffset();
+    List<String> sortList = pagedSortedTypedQuery.getSortList();
+    List<CedarNodeType> nodeTypeList = pagedSortedTypedQuery.getNodeTypeList();
 
     FolderServerNodeListResponse r = new FolderServerNodeListResponse();
     r.setNodeListQueryType(NodeListQueryType.FOLDER_CONTENT);
