@@ -372,6 +372,13 @@ public class FoldersResource extends AbstractFolderServerResource {
           .errorKey(CedarErrorKey.FOLDER_NOT_FOUND)
           .errorMessage("The folder can not be found by id")
           .build();
+    } else if (folder.isUserHome()) {
+      return CedarResponse.badRequest()
+          .id(folderId)
+          .errorKey(CedarErrorKey.FOLDER_PERMISSIONS_CAN_NOT_BE_CHANGED)
+          .errorReasonKey(CedarErrorReasonKey.USER_HOME_FOLDER)
+          .errorMessage("User home folder permissions can not be changed")
+          .build();
     } else {
       BackendCallResult backendCallResult = permissionSession.updateNodePermissions(folderId, permissionsRequest,
           FolderOrResource.FOLDER);
