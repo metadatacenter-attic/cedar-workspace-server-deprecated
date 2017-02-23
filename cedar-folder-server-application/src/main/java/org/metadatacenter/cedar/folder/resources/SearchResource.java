@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerNode;
 import org.metadatacenter.model.request.NodeListQueryType;
@@ -15,7 +16,7 @@ import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.util.http.CedarURIBuilder;
 import org.metadatacenter.util.http.LinkHeaderUtil;
-import org.metadatacenter.util.http.PagedSearchQuery;
+import org.metadatacenter.util.http.PagedSortedTypedSearchQuery;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -43,7 +44,7 @@ public class SearchResource extends AbstractFolderServerResource {
   public Response sharedWithMe(@QueryParam(QP_Q) Optional<String> q,
                                @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
                                @QueryParam(QP_DERIVED_FROM_ID) Optional<String> derivedFromId,
-                               @QueryParam(QP_SORT) Optional<String> sort,
+                               @QueryParam(QP_SORT) Optional<String> sortParam,
                                @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
                                @QueryParam(QP_OFFSET) Optional<Integer> offsetParam,
                                @QueryParam(QP_SHARING) Optional<String> sharing) throws CedarException {
@@ -51,13 +52,20 @@ public class SearchResource extends AbstractFolderServerResource {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
 
-    PagedSearchQuery psq = new PagedSearchQuery(resourceTypes, sort, limitParam, offsetParam);
-    psq.validate();
+    PagedSortedTypedSearchQuery pagedSearchQuery = new PagedSortedTypedSearchQuery(
+        cedarConfig.getFolderRESTAPI().getPagination())
+        .q(q)
+        .resourceTypes(resourceTypes)
+        .derivedFromId(derivedFromId)
+        .sort(sortParam)
+        .limit(limitParam)
+        .offset(offsetParam);
+    pagedSearchQuery.validate();
 
-    int limit = psq.getLimit();
-    int offset = psq.getOffset();
-    List<String> sortList = psq.getSortList();
-    List<CedarNodeType> nodeTypeList = psq.getNodeTypeList();
+    int limit = pagedSearchQuery.getLimit();
+    int offset = pagedSearchQuery.getOffset();
+    List<String> sortList = pagedSearchQuery.getSortList();
+    List<CedarNodeType> nodeTypeList = pagedSearchQuery.getNodeTypeList();
 
     FolderServerNodeListResponse r = new FolderServerNodeListResponse();
 
@@ -85,6 +93,9 @@ public class SearchResource extends AbstractFolderServerResource {
     } else if (nlqt == NodeListQueryType.VIEW_ALL) {
       resources = folderSession.viewAll(nodeTypeList, limit, offset, sortList);
       total = folderSession.viewAllCount(nodeTypeList);
+    } else {
+      throw new CedarProcessingException("Search type not supported by folder server")
+          .parameter("resolvedSearchType", nlqt.getValue());
     }
 
     r.setTotalCount(total);
@@ -94,7 +105,7 @@ public class SearchResource extends AbstractFolderServerResource {
 
     CedarURIBuilder builder = new CedarURIBuilder(uriInfo)
         .queryParam(QP_RESOURCE_TYPES, resourceTypes)
-        .queryParam(QP_SORT, sort)
+        .queryParam(QP_SORT, sortParam)
         .queryParam(QP_LIMIT, limitParam)
         .queryParam(QP_OFFSET, offsetParam);
 
