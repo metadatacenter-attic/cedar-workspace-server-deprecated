@@ -18,6 +18,7 @@ import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
+import org.metadatacenter.server.neo4j.parameter.NodeProperty;
 import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
@@ -249,13 +250,13 @@ public class FoldersResource extends AbstractFolderServerResource {
           .errorMessage("The folder can not be found by id")
           .build();
     } else {
-      Map<String, String> updateFields = new HashMap<>();
+      Map<NodeProperty, String> updateFields = new HashMap<>();
       if (descriptionV != null) {
-        updateFields.put("description", descriptionV);
+        updateFields.put(NodeProperty.DESCRIPTION, descriptionV);
       }
       if (nameV != null) {
-        updateFields.put("name", nameV);
-        updateFields.put("displayName", nameV);
+        updateFields.put(NodeProperty.NAME, nameV);
+        updateFields.put(NodeProperty.DISPLAY_NAME, nameV);
       }
       FolderServerFolder updatedFolder = folderSession.updateFolderById(id, updateFields);
       if (updatedFolder == null) {
