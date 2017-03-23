@@ -158,8 +158,11 @@ public class ResourcesResource extends AbstractFolderServerResource {
       if (permissionSession.userHasWriteAccessToResource(id)) {
         resource.addCurrentUserPermission(NodePermission.WRITE);
       }
-      if (permissionSession.userIsOwnerOfResource(id)) {
+      if (permissionSession.userCanChangeOwnerOfResource(id)) {
         resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
+      }
+      if (permissionSession.userHasWriteAccessToResource(id)) {
+        resource.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
       }
       return Response.ok().entity(resource).build();
     }

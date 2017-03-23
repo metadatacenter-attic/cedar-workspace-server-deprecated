@@ -192,10 +192,13 @@ public class FoldersResource extends AbstractFolderServerResource {
       if (permissionSession.userHasWriteAccessToFolder(id)) {
         folder.addCurrentUserPermission(NodePermission.WRITE);
       }
-      if (permissionSession.userIsOwnerOfFolder(id)) {
+      if (permissionSession.userCanChangeOwnerOfFolder(id)) {
         folder.addCurrentUserPermission(NodePermission.CHANGEOWNER);
       }
-
+      if (!folder.isRoot() && !folder.isSystem() && !folder.isUserHome()
+          && permissionSession.userHasWriteAccessToResource(id)) {
+        folder.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
+      }
       return Response.ok().entity(folder).build();
     }
   }
@@ -285,7 +288,7 @@ public class FoldersResource extends AbstractFolderServerResource {
           .errorMessage("The folder can not be found by id")
           .build();
     } else {
-      long contentCount = folderSession.findFolderContentsCount(id);
+      long contentCount = folderSession.findFolderContentsUnfilteredCount(id);
       if (contentCount > 0) {
         return CedarResponse.badRequest()
             .id(id)
