@@ -196,7 +196,7 @@ public class FoldersResource extends AbstractFolderServerResource {
         folder.addCurrentUserPermission(NodePermission.CHANGEOWNER);
       }
       if (!folder.isRoot() && !folder.isSystem() && !folder.isUserHome()
-          && permissionSession.userHasWriteAccessToResource(id)) {
+          && permissionSession.userHasWriteAccessToFolder(id)) {
         folder.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
       }
       return Response.ok().entity(folder).build();
