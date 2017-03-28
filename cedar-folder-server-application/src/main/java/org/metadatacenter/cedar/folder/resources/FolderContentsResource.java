@@ -84,7 +84,8 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     List<FolderServerFolder> pathInfo = folderSession.findFolderPathByPath(path);
 
-    return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, resourceTypes, sort, limitParam,
+    return findFolderContentsFiltered(folderSession, folder, absoluteURI.toString(), pathInfo, resourceTypes, sort,
+    limitParam,
         offsetParam);
   }
   */
@@ -160,10 +161,10 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     r.setRequest(req);
 
-    List<FolderServerNode> resources = folderSession.findFolderContents(folder.getId(), nodeTypeList, limit, offset,
-        sortList);
+    List<FolderServerNode> resources = folderSession.findFolderContentsFiltered(folder.getId(), nodeTypeList, limit,
+        offset, sortList);
 
-    long total = folderSession.findFolderContentsCount(folder.getId(), nodeTypeList);
+    long total = folderSession.findFolderContentsFilteredCount(folder.getId(), nodeTypeList);
 
     r.setTotalCount(total);
     r.setCurrentOffset(offset);

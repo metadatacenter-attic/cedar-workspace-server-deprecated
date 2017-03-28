@@ -18,6 +18,7 @@ import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
+import org.metadatacenter.server.neo4j.parameter.NodeProperty;
 import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
@@ -157,8 +158,11 @@ public class ResourcesResource extends AbstractFolderServerResource {
       if (permissionSession.userHasWriteAccessToResource(id)) {
         resource.addCurrentUserPermission(NodePermission.WRITE);
       }
-      if (permissionSession.userIsOwnerOfResource(id)) {
+      if (permissionSession.userCanChangeOwnerOfResource(id)) {
         resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
+      }
+      if (permissionSession.userHasWriteAccessToResource(id)) {
+        resource.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
       }
       return Response.ok().entity(resource).build();
     }
@@ -206,13 +210,13 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .errorMessage("The resource can not be found by id")
           .build();
     } else {
-      Map<String, String> updateFields = new HashMap<>();
+      Map<NodeProperty, String> updateFields = new HashMap<>();
       if (description != null) {
-        updateFields.put("description", descriptionV);
+        updateFields.put(NodeProperty.DESCRIPTION, descriptionV);
       }
       if (name != null) {
-        updateFields.put("name", nameV);
-        updateFields.put("displayName", nameV);
+        updateFields.put(NodeProperty.NAME, nameV);
+        updateFields.put(NodeProperty.DISPLAY_NAME, nameV);
       }
       FolderServerResource updatedResource = folderSession.updateResourceById(id, resource.getType(), updateFields);
       if (updatedResource == null) {
