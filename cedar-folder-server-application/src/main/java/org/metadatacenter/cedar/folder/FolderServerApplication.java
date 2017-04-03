@@ -28,7 +28,6 @@ public class FolderServerApplication extends CedarMicroserviceApplication<Folder
     final IndexResource index = new IndexResource();
     environment.jersey().register(index);
 
-    environment.jersey().register(new AccessibleNodesResource(cedarConfig));
     environment.jersey().register(new CommandResource(cedarConfig));
     environment.jersey().register(new FolderContentsResource(cedarConfig));
     environment.jersey().register(new FoldersResource(cedarConfig));
