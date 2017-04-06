@@ -6,6 +6,7 @@ import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.folder.health.FolderServerHealthCheck;
 import org.metadatacenter.cedar.folder.resources.*;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
+import org.metadatacenter.model.ServerName;
 
 public class FolderServerApplication extends CedarMicroserviceApplication<FolderServerConfiguration> {
 
@@ -14,8 +15,8 @@ public class FolderServerApplication extends CedarMicroserviceApplication<Folder
   }
 
   @Override
-  public String getName() {
-    return "cedar-folder-server";
+  protected ServerName getServerName() {
+    return ServerName.FOLDER;
   }
 
   @Override
