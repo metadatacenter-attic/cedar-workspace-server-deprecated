@@ -1,6 +1,5 @@
 package org.metadatacenter.cedar.folder;
 
-import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.folder.health.FolderServerHealthCheck;
@@ -20,7 +19,7 @@ public class FolderServerApplication extends CedarMicroserviceApplication<Folder
   }
 
   @Override
-  public void initializeApp(Bootstrap<FolderServerConfiguration> bootstrap) {
+  public void initializeApp() {
     CedarDataServices.initializeFolderServices(cedarConfig);
   }
 
