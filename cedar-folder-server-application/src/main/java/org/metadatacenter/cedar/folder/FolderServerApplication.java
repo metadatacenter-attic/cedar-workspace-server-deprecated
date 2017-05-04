@@ -1,11 +1,11 @@
 package org.metadatacenter.cedar.folder;
 
-import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.folder.health.FolderServerHealthCheck;
 import org.metadatacenter.cedar.folder.resources.*;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
+import org.metadatacenter.model.ServerName;
 
 public class FolderServerApplication extends CedarMicroserviceApplication<FolderServerConfiguration> {
 
@@ -14,12 +14,12 @@ public class FolderServerApplication extends CedarMicroserviceApplication<Folder
   }
 
   @Override
-  public String getName() {
-    return "cedar-folder-server";
+  protected ServerName getServerName() {
+    return ServerName.FOLDER;
   }
 
   @Override
-  public void initializeApp(Bootstrap<FolderServerConfiguration> bootstrap) {
+  public void initializeApp() {
     CedarDataServices.initializeFolderServices(cedarConfig);
   }
 
@@ -28,7 +28,6 @@ public class FolderServerApplication extends CedarMicroserviceApplication<Folder
     final IndexResource index = new IndexResource();
     environment.jersey().register(index);
 
-    environment.jersey().register(new AccessibleNodesResource(cedarConfig));
     environment.jersey().register(new CommandResource(cedarConfig));
     environment.jersey().register(new FolderContentsResource(cedarConfig));
     environment.jersey().register(new FoldersResource(cedarConfig));
