@@ -5,27 +5,27 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-parent</artifactId>
-    <version>1.2.2</version>
+    <version>1.3.0</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
-  <artifactId>cedar-folder-server</artifactId>
-  <version>1.2.2</version>
+  <artifactId>cedar-workspace-server</artifactId>
+  <version>1.3.0</version>
   <packaging>pom</packaging>
 
-  <name>CEDAR Folder Server</name>
-  <description>CEDAR server to manage Folders</description>
+  <name>CEDAR Workspace Server</name>
+  <description>CEDAR server to manage the workspace</description>
 
   <scm>
-    <connection>scm:git:git@github.com:metadatacenter/cedar-folder-server.git</connection>
-    <developerConnection>scm:git:git@github.com:metadatacenter/cedar-folder-server.git</developerConnection>
-    <url>https://github.com/metadatacenter/cedar-folder-server</url>
-    <tag>release-1.2.2</tag>
+    <connection>scm:git:git@github.com:metadatacenter/cedar-workspace-server.git</connection>
+    <developerConnection>scm:git:git@github.com:metadatacenter/cedar-workspace-server.git</developerConnection>
+    <url>https://github.com/metadatacenter/cedar-workspace-server</url>
+    <tag>release-1.3.0</tag>
   </scm>
 
   <modules>
-    <module>cedar-folder-server-core</module>
-    <module>cedar-folder-server-application</module>
+    <module>cedar-workspace-server-core</module>
+    <module>cedar-workspace-server-application</module>
   </modules>
 
 </project>

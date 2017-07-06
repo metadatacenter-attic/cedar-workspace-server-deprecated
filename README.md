@@ -1,8 +1,8 @@
-# cedar-folder-server
+# cedar-workspace-server
 
 CEDAR service for managing folder resources
 
-[![Build Status](https://travis-ci.org/metadatacenter/cedar-folder-server.svg?branch=master)](https://travis-ci.org/metadatacenter/cedar-folder-server)
+[![Build Status](https://travis-ci.org/metadatacenter/cedar-workspace-server.svg?branch=master)](https://travis-ci.org/metadatacenter/cedar-workspace-server)
 
 #### Questions
 
