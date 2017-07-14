@@ -20,7 +20,7 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
   }
 
   @Override
-  protected void initializeWithBootsrap(Bootstrap<WorkspaceServerConfiguration> bootstrap) {
+  protected void initializeWithBootstrap(Bootstrap<WorkspaceServerConfiguration> bootstrap) {
   }
 
   @Override
