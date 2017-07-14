@@ -1,5 +1,6 @@
 package org.metadatacenter.cedar.workspace;
 
+import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.workspace.health.FolderServerHealthCheck;
@@ -16,6 +17,10 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
   @Override
   protected ServerName getServerName() {
     return ServerName.WORKSPACE;
+  }
+
+  @Override
+  protected void initializeWithBootstrap(Bootstrap<WorkspaceServerConfiguration> bootstrap) {
   }
 
   @Override
