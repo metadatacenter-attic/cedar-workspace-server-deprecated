@@ -6,6 +6,7 @@ import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.workspace.health.FolderServerHealthCheck;
 import org.metadatacenter.cedar.workspace.resources.*;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
+import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.model.ServerName;
 
 public class WorkspaceServerApplication extends CedarMicroserviceApplication<WorkspaceServerConfiguration> {
@@ -20,7 +21,7 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
   }
 
   @Override
-  protected void initializeWithBootstrap(Bootstrap<WorkspaceServerConfiguration> bootstrap) {
+  protected void initializeWithBootstrap(Bootstrap<WorkspaceServerConfiguration> bootstrap, CedarConfig cedarConfig) {
   }
 
   @Override
