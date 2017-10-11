@@ -94,9 +94,9 @@ public class ResourcesResource extends AbstractFolderServerResource {
     String descriptionV = null;
     CedarParameter description = c.request().getRequestBody().get("description");
     // let's not read resource description for instances
-    if (nodeType != CedarNodeType.INSTANCE) {
-      c.must(description).be(NonEmpty);
-    }
+//    if (nodeType != CedarNodeType.INSTANCE) {
+//      c.must(description).be(NonEmpty);
+//    }
     descriptionV = description.stringValue();
 
     // check existence of parent folder
