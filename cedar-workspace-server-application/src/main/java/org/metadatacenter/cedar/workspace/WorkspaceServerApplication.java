@@ -3,11 +3,15 @@ package org.metadatacenter.cedar.workspace;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.metadatacenter.bridge.CedarDataServices;
+import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.cedar.workspace.health.FolderServerHealthCheck;
 import org.metadatacenter.cedar.workspace.resources.*;
-import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.model.ServerName;
+import org.metadatacenter.rest.context.CedarRequestContext;
+import org.metadatacenter.rest.context.CedarRequestContextFactory;
+import org.metadatacenter.server.AdminServiceSession;
+import org.metadatacenter.server.service.UserService;
 
 public class WorkspaceServerApplication extends CedarMicroserviceApplication<WorkspaceServerConfiguration> {
 
@@ -27,6 +31,12 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
   @Override
   public void initializeApp() {
     CedarDataServices.initializeFolderServices(cedarConfig);
+
+    // Create Workspace global objects, if needed
+    UserService userService = CedarDataServices.getUserService();
+    CedarRequestContext cedarRequestContext = CedarRequestContextFactory.fromAdminUser(cedarConfig, userService);
+    AdminServiceSession adminSession = CedarDataServices.getAdminServiceSession(cedarRequestContext);
+    adminSession.ensureGlobalObjectsExists();
   }
 
   @Override
