@@ -94,7 +94,7 @@ public class SearchResource extends AbstractFolderServerResource {
       resources = folderSession.viewAll(nodeTypeList, limit, offset, sortList);
       total = folderSession.viewAllCount(nodeTypeList);
     } else {
-      throw new CedarProcessingException("Search type not supported by folder server")
+      throw new CedarProcessingException("Search type not supported by Workspace server")
           .parameter("resolvedSearchType", nlqt.getValue());
     }
 
