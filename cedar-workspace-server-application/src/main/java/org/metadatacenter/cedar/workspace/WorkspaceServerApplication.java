@@ -30,7 +30,7 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
 
   @Override
   public void initializeApp() {
-    CedarDataServices.initializeFolderServices(cedarConfig);
+    CedarDataServices.initializeWorkspaceServices(cedarConfig);
 
     // Create Workspace global objects, if needed
     UserService userService = CedarDataServices.getUserService();
