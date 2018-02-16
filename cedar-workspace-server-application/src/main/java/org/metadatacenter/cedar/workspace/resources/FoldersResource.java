@@ -259,7 +259,6 @@ public class FoldersResource extends AbstractFolderServerResource {
       }
       if (nameV != null) {
         updateFields.put(NodeProperty.NAME, nameV);
-        updateFields.put(NodeProperty.DISPLAY_NAME, nameV);
       }
       FolderServerFolder updatedFolder = folderSession.updateFolderById(id, updateFields);
       if (updatedFolder == null) {
