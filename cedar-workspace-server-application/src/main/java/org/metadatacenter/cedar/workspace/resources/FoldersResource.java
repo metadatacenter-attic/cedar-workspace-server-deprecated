@@ -147,8 +147,7 @@ public class FoldersResource extends AbstractFolderServerResource {
 
     String descriptionV = description.stringValue();
 
-    newFolder = folderSession.createFolderAsChildOfId(parentFolder.getId(), nameV, nameV, descriptionV, NodeLabel
-        .FOLDER);
+    newFolder = folderSession.createFolderAsChildOfId(parentFolder.getId(), nameV, descriptionV);
 
     if (newFolder != null) {
       UriBuilder builder = uriInfo.getAbsolutePathBuilder();
