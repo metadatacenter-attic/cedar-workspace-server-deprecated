@@ -8,8 +8,10 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
+import org.metadatacenter.model.BiboStatus;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.FolderOrResource;
+import org.metadatacenter.model.ResourceVersion;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
@@ -17,6 +19,7 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
+import org.metadatacenter.server.VersionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.neo4j.parameter.NodeProperty;
 import org.metadatacenter.server.result.BackendCallResult;
@@ -55,6 +58,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @POST
   @Timed
   public Response createResource() throws CedarException {
+    //TODO: use constants here, instead of strings. Also replace in ResourceServer code
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
 
     c.must(c.user()).be(LoggedIn);
@@ -77,6 +81,12 @@ public class ResourcesResource extends AbstractFolderServerResource {
     CedarParameter nodeTypeP = c.request().getRequestBody().get("nodeType");
     c.must(nodeTypeP).be(NonEmpty);
 
+    CedarParameter versionP = c.request().getRequestBody().get("version");
+    c.must(versionP).be(NonEmpty);
+
+    CedarParameter statusP = c.request().getRequestBody().get("status");
+    c.must(statusP).be(NonEmpty);
+
     String nodeTypeString = nodeTypeP.stringValue();
 
     CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
@@ -90,6 +100,11 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     }
 
+    String versionString = versionP.stringValue();
+    ResourceVersion version = ResourceVersion.forValue(versionString);
+
+    String statusString = statusP.stringValue();
+    BiboStatus status = BiboStatus.forValue(statusString);
 
     String descriptionV = null;
     CedarParameter description = c.request().getRequestBody().get("description");
@@ -115,7 +130,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
       // Currently we allow duplicate names, the id is the PK
       NodeLabel nodeLabel = NodeLabel.forCedarNodeType(nodeType);
       newResource = folderSession.createResourceAsChildOfId(parentId, id, nodeType, name
-          .stringValue(), descriptionV, nodeLabel);
+          .stringValue(), descriptionV, nodeLabel, version, status);
     }
 
     if (newResource != null) {
@@ -142,6 +157,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
     PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
+    VersionServiceSession versionSession = CedarDataServices.getVersionServiceSession(c);
 
     FolderServerResource resource = folderSession.findResourceById(id);
     if (resource == null) {
@@ -163,6 +179,14 @@ public class ResourcesResource extends AbstractFolderServerResource {
       }
       if (permissionSession.userHasWriteAccessToResource(id)) {
         resource.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
+      }
+      if (versionSession.userCanPerformVersioning(resource)) {
+        if (versionSession.resourceCanBePublished(resource)) {
+          resource.addCurrentUserPermission(NodePermission.PUBLISH);
+        }
+        if (versionSession.resourceCanBeDrafted(resource)) {
+          resource.addCurrentUserPermission(NodePermission.CREATE_DRAFT);
+        }
       }
       return Response.ok().entity(resource).build();
     }
