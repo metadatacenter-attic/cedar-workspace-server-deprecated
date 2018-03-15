@@ -42,6 +42,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
+import static org.metadatacenter.model.ModelNodeNames.BIBO_STATUS;
+import static org.metadatacenter.model.ModelNodeNames.PAV_VERSION;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 import static org.metadatacenter.rest.assertion.GenericAssertions.NonEmpty;
 
@@ -204,7 +206,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
     CedarParameter name = c.request().getRequestBody().get("name");
-
     String nameV = null;
     if (!name.isEmpty()) {
       nameV = name.stringValue();
@@ -212,17 +213,42 @@ public class ResourcesResource extends AbstractFolderServerResource {
     }
 
     CedarParameter description = c.request().getRequestBody().get("description");
-
     String descriptionV = null;
     if (!description.isEmpty()) {
       descriptionV = description.stringValue();
       descriptionV = descriptionV.trim();
     }
 
-    if ((name == null || name.isEmpty()) && (description == null || description.isEmpty())) {
+    CedarParameter newVersionParam = c.request().getRequestBody().get("version");
+    ResourceVersion newVersion = null;
+    if (!newVersionParam.isEmpty()) {
+      newVersion = ResourceVersion.forValueWithValidation(newVersionParam.stringValue());
+    }
+    if (!newVersionParam.isEmpty() && !newVersion.isValid()) {
       return CedarResponse.badRequest()
-          .errorKey(CedarErrorKey.MISSING_NAME_AND_DESCRIPTION)
-          .errorMessage("You must supply the new description or the new name of the resource!")
+          .errorKey(CedarErrorKey.INVALID_DATA)
+          .parameter("version", newVersionParam.stringValue())
+          .build();
+    }
+
+    CedarParameter newStatusParam = c.request().getRequestBody().get("status");
+    BiboStatus newStatus = null;
+    if (!newStatusParam.isEmpty()) {
+      newStatus = BiboStatus.forValue(newStatusParam.stringValue());
+    }
+    if (!newStatusParam.isEmpty() && newStatus == null ) {
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.INVALID_DATA)
+          .parameter("status", newStatusParam.stringValue())
+          .build();
+    }
+
+    if ((name == null || name.isEmpty()) && (description == null || description.isEmpty()) &&
+        (newVersionParam == null || newVersionParam.isEmpty()) && (newStatusParam == null || newStatusParam.isEmpty())) {
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.MISSING_DATA)
+          .errorMessage("No known data was supplied to the request! Known fields are: name, description, " +
+              PAV_VERSION + ", " + BIBO_STATUS)
           .build();
     }
 
@@ -235,11 +261,17 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     } else {
       Map<NodeProperty, String> updateFields = new HashMap<>();
-      if (description != null) {
+      if (description != null && !description.isEmpty()) {
         updateFields.put(NodeProperty.DESCRIPTION, descriptionV);
       }
-      if (name != null) {
+      if (name != null && !name.isEmpty()) {
         updateFields.put(NodeProperty.NAME, nameV);
+      }
+      if (newVersion != null && newVersion.isValid()) {
+        updateFields.put(NodeProperty.VERSION, newVersion.getValue());
+      }
+      if (newStatus != null) {
+        updateFields.put(NodeProperty.STATUS, newStatus.getValue());
       }
       FolderServerResource updatedResource = folderSession.updateResourceById(id, resource.getType(), updateFields);
       if (updatedResource == null) {
