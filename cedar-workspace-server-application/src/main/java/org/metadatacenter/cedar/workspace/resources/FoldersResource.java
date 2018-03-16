@@ -147,8 +147,7 @@ public class FoldersResource extends AbstractFolderServerResource {
 
     String descriptionV = description.stringValue();
 
-    newFolder = folderSession.createFolderAsChildOfId(parentFolder.getId(), nameV, nameV, descriptionV, NodeLabel
-        .FOLDER);
+    newFolder = folderSession.createFolderAsChildOfId(parentFolder.getId(), nameV, descriptionV);
 
     if (newFolder != null) {
       UriBuilder builder = uriInfo.getAbsolutePathBuilder();
@@ -259,7 +258,6 @@ public class FoldersResource extends AbstractFolderServerResource {
       }
       if (nameV != null) {
         updateFields.put(NodeProperty.NAME, nameV);
-        updateFields.put(NodeProperty.DISPLAY_NAME, nameV);
       }
       FolderServerFolder updatedFolder = folderSession.updateFolderById(id, updateFields);
       if (updatedFolder == null) {
