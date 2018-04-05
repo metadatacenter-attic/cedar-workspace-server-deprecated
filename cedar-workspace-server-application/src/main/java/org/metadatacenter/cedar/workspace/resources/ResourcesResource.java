@@ -14,14 +14,14 @@ import org.metadatacenter.model.FolderOrResource;
 import org.metadatacenter.model.ResourceVersion;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
+import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.VersionServiceSession;
-import org.metadatacenter.server.neo4j.NodeLabel;
-import org.metadatacenter.server.neo4j.parameter.NodeProperty;
+import org.metadatacenter.server.neo4j.cypher.NodeProperty;
 import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
@@ -130,9 +130,14 @@ public class ResourcesResource extends AbstractFolderServerResource {
     } else {
       // Later we will guarantee some kind of uniqueness for the resource names
       // Currently we allow duplicate names, the id is the PK
-      NodeLabel nodeLabel = NodeLabel.forCedarNodeType(nodeType);
-      newResource = folderSession.createResourceAsChildOfId(parentId, id, nodeType, name
-          .stringValue(), descriptionV, nodeLabel, version, status);
+      FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
+      brandNewResource.setId1(id);
+      brandNewResource.setType(nodeType);
+      brandNewResource.setName1(name.stringValue());
+      brandNewResource.setDescription1(descriptionV);
+      brandNewResource.setVersion1(versionString);
+      brandNewResource.setStatus1(statusString);
+      newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
 
     if (newResource != null) {
@@ -236,7 +241,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
     if (!newStatusParam.isEmpty()) {
       newStatus = BiboStatus.forValue(newStatusParam.stringValue());
     }
-    if (!newStatusParam.isEmpty() && newStatus == null ) {
+    if (!newStatusParam.isEmpty() && newStatus == null) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.INVALID_DATA)
           .parameter("status", newStatusParam.stringValue())
@@ -244,7 +249,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
     }
 
     if ((name == null || name.isEmpty()) && (description == null || description.isEmpty()) &&
-        (newVersionParam == null || newVersionParam.isEmpty()) && (newStatusParam == null || newStatusParam.isEmpty())) {
+        (newVersionParam == null || newVersionParam.isEmpty()) && (newStatusParam == null || newStatusParam.isEmpty()
+    )) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.MISSING_DATA)
           .errorMessage("No known data was supplied to the request! Known fields are: name, description, " +
