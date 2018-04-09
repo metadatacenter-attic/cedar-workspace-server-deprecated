@@ -83,12 +83,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     CedarParameter nodeTypeP = c.request().getRequestBody().get("nodeType");
     c.must(nodeTypeP).be(NonEmpty);
 
-    CedarParameter versionP = c.request().getRequestBody().get("version");
-    c.must(versionP).be(NonEmpty);
-
-    CedarParameter statusP = c.request().getRequestBody().get("status");
-    c.must(statusP).be(NonEmpty);
-
     String nodeTypeString = nodeTypeP.stringValue();
 
     CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
@@ -102,6 +96,16 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     }
 
+    CedarParameter versionP = c.request().getRequestBody().get("version");
+
+    CedarParameter statusP = c.request().getRequestBody().get("status");
+
+
+    if (nodeType != CedarNodeType.INSTANCE) {
+      c.must(versionP).be(NonEmpty);
+      c.must(statusP).be(NonEmpty);
+    }
+
     String versionString = versionP.stringValue();
     ResourceVersion version = ResourceVersion.forValue(versionString);
 
@@ -110,10 +114,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     String descriptionV = null;
     CedarParameter description = c.request().getRequestBody().get("description");
-    // let's not read resource description for instances
-//    if (nodeType != CedarNodeType.INSTANCE) {
-//      c.must(description).be(NonEmpty);
-//    }
     descriptionV = description.stringValue();
 
     // check existence of parent folder
@@ -378,5 +378,40 @@ public class ResourcesResource extends AbstractFolderServerResource {
       return Response.ok().entity(permissions).build();
     }
   }
+
+  @GET
+  @Timed
+  @Path("/{id}/report")
+  public Response getReport(@PathParam(PP_ID) String id) throws CedarException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    c.must(c.user()).be(LoggedIn);
+
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
+
+    FolderServerResource resource = folderSession.findResourceById(id);
+    if (resource == null) {
+      return CedarResponse.notFound()
+          .id(id)
+          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
+          .errorMessage("The resource can not be found by id")
+          .build();
+    } else {
+      if (resource.getType() == CedarNodeType.INSTANCE) {
+        //CedarNodePermissions permissions = permissionSession.getInstanceReport(id);
+        return Response.ok().entity(resource).build();
+      } else if (resource.getType() == CedarNodeType.ELEMENT) {
+        return Response.ok().entity(resource).build();
+      } else if (resource.getType() == CedarNodeType.TEMPLATE) {
+        return Response.ok().entity(resource).build();
+      }
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.INVALID_DATA)
+          .errorMessage("Invalid resource type")
+          .parameter("nodeType", resource.getType().getValue())
+          .build();
+    }
+  }
+
 
 }
