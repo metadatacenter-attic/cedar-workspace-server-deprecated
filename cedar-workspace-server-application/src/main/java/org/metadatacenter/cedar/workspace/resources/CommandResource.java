@@ -9,6 +9,7 @@ import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.BiboStatus;
 import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.FolderOrResource;
 import org.metadatacenter.model.ResourceVersion;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
@@ -18,8 +19,12 @@ import org.metadatacenter.rest.assertion.noun.CedarRequestBody;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
+import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.result.BackendCallResult;
+import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
+import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
+import org.metadatacenter.server.security.model.auth.NodePermissionUser;
 import org.metadatacenter.util.CedarNodeTypeUtil;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
@@ -135,10 +140,26 @@ public class CommandResource extends AbstractFolderServerResource {
       throw new CedarBackendException(backendCallResult);
     } else {
       folderSession.setPreviousVersion(newId, oldId);
-      // TODO: do the propagate sharing part
-      //!!!!!
+
+      boolean propagateSharing = Boolean.parseBoolean(propagateSharingString);
+
+      if (propagateSharing) {
+        PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
+        CedarNodePermissions permissions = permissionSession.getNodePermissions(oldId, FolderOrResource.RESOURCE);
+        CedarNodePermissionsRequest permissionsRequest = permissions.toRequest();
+        NodePermissionUser newOwner = new NodePermissionUser();
+        newOwner.setId(c.getCedarUser().getId());
+        permissionsRequest.setOwner(newOwner);
+        BackendCallResult backendCallResult = permissionSession.updateNodePermissions(newId, permissionsRequest,
+            FolderOrResource.RESOURCE);
+        if (backendCallResult.isError()) {
+          throw new CedarBackendException(backendCallResult);
+        }
+
+      }
+      // TODO: !!!!!
       // TODO: Create a builder helper for Folders, nodes, resources. Make that work with strong types, as the list
-      // of params before
+      // TODO: of params before
       // TODO: What about the node labels? There was a method which collected those
     }
 
