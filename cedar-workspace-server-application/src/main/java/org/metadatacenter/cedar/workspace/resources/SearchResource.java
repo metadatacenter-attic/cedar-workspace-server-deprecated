@@ -101,8 +101,8 @@ public class SearchResource extends AbstractFolderServerResource {
       resources = folderSession.viewSharedWithMe(nodeTypeList, version, publicationStatus, limit, offset, sortList);
       total = folderSession.viewSharedWithMeCount(nodeTypeList, version, publicationStatus);
     } else if (nlqt == NodeListQueryType.VIEW_ALL) {
-      resources = folderSession.viewAll(nodeTypeList, limit, offset, sortList);
-      total = folderSession.viewAllCount(nodeTypeList);
+      resources = folderSession.viewAll(nodeTypeList, version, publicationStatus, limit, offset, sortList);
+      total = folderSession.viewAllCount(nodeTypeList, version, publicationStatus);
     } else {
       throw new CedarProcessingException("Search type not supported by Workspace server")
           .parameter("resolvedSearchType", nlqt.getValue());
