@@ -98,19 +98,19 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     CedarParameter versionP = c.request().getRequestBody().get("version");
 
-    CedarParameter statusP = c.request().getRequestBody().get("status");
+    CedarParameter publicationStatusP = c.request().getRequestBody().get("publicationStatus");
 
 
     if (nodeType != CedarNodeType.INSTANCE) {
       c.must(versionP).be(NonEmpty);
-      c.must(statusP).be(NonEmpty);
+      c.must(publicationStatusP).be(NonEmpty);
     }
 
     String versionString = versionP.stringValue();
     ResourceVersion version = ResourceVersion.forValue(versionString);
 
-    String statusString = statusP.stringValue();
-    BiboStatus status = BiboStatus.forValue(statusString);
+    String publicationStatusString = publicationStatusP.stringValue();
+    BiboStatus publicationStatus = BiboStatus.forValue(publicationStatusString);
 
     String descriptionV = null;
     CedarParameter description = c.request().getRequestBody().get("description");
@@ -136,7 +136,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
       brandNewResource.setName1(name.stringValue());
       brandNewResource.setDescription1(descriptionV);
       brandNewResource.setVersion1(versionString);
-      brandNewResource.setStatus1(statusString);
+      brandNewResource.setPublicationStatus1(publicationStatusString);
       newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
 
@@ -236,20 +236,20 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     }
 
-    CedarParameter newStatusParam = c.request().getRequestBody().get("status");
-    BiboStatus newStatus = null;
-    if (!newStatusParam.isEmpty()) {
-      newStatus = BiboStatus.forValue(newStatusParam.stringValue());
+    CedarParameter newPublicationStatusParam = c.request().getRequestBody().get("publicationStatus");
+    BiboStatus newPublicationStatus = null;
+    if (!newPublicationStatusParam.isEmpty()) {
+      newPublicationStatus = BiboStatus.forValue(newPublicationStatusParam.stringValue());
     }
-    if (!newStatusParam.isEmpty() && newStatus == null) {
+    if (!newPublicationStatusParam.isEmpty() && newPublicationStatus == null) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.INVALID_DATA)
-          .parameter("status", newStatusParam.stringValue())
+          .parameter("publicationStatus", newPublicationStatusParam.stringValue())
           .build();
     }
 
     if ((name == null || name.isEmpty()) && (description == null || description.isEmpty()) &&
-        (newVersionParam == null || newVersionParam.isEmpty()) && (newStatusParam == null || newStatusParam.isEmpty()
+        (newVersionParam == null || newVersionParam.isEmpty()) && (newPublicationStatusParam == null || newPublicationStatusParam.isEmpty()
     )) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.MISSING_DATA)
@@ -276,8 +276,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
       if (newVersion != null && newVersion.isValid()) {
         updateFields.put(NodeProperty.VERSION, newVersion.getValue());
       }
-      if (newStatus != null) {
-        updateFields.put(NodeProperty.STATUS, newStatus.getValue());
+      if (newPublicationStatus != null) {
+        updateFields.put(NodeProperty.PUBLICATION_STATUS, newPublicationStatus.getValue());
       }
       FolderServerResource updatedResource = folderSession.updateResourceById(id, resource.getType(), updateFields);
       if (updatedResource == null) {

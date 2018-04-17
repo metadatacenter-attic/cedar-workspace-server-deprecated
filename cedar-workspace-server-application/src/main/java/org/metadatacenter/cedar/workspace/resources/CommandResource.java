@@ -100,7 +100,7 @@ public class CommandResource extends AbstractFolderServerResource {
     String folderId = requestBody.get("folderId").stringValue();
     String nodeTypeString = requestBody.get("nodeType").stringValue();
     String versionString = requestBody.get("version").stringValue();
-    String statusString = requestBody.get("status").stringValue();
+    String publicationStatusString = requestBody.get("publicationStatus").stringValue();
     String propagateSharingString = requestBody.get("propagateSharing").stringValue();
 
     CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
@@ -113,14 +113,14 @@ public class CommandResource extends AbstractFolderServerResource {
 
     NodeLabel label = NodeLabel.forCedarNodeType(nodeType);
     ResourceVersion version = ResourceVersion.forValue(versionString);
-    BiboStatus status = BiboStatus.forValue(statusString);
+    BiboStatus status = BiboStatus.forValue(publicationStatusString);
     FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
     brandNewResource.setId1(newId);
     brandNewResource.setType(nodeType);
     brandNewResource.setName1(sourceResource.getName());
     brandNewResource.setDescription1(sourceResource.getDescription());
     brandNewResource.setVersion1(versionString);
-    brandNewResource.setStatus1(statusString);
+    brandNewResource.setPublicationStatus1(publicationStatusString);
     FolderServerResource newResource = folderSession.createResourceAsChildOfId(brandNewResource, folderId);
     if (newResource == null) {
       BackendCallResult backendCallResult = new BackendCallResult();
@@ -194,7 +194,7 @@ public class CommandResource extends AbstractFolderServerResource {
     descriptionV = description.stringValue();
 
     ResourceVersion version = ResourceVersion.ZERO_ZERO_ONE;
-    BiboStatus status = BiboStatus.DRAFT;
+    BiboStatus publicationStatus = BiboStatus.DRAFT;
 
     // check existence of parent folder
     FolderServerResource newResource = null;
@@ -216,7 +216,7 @@ public class CommandResource extends AbstractFolderServerResource {
       brandNewResource.setName1(name.stringValue());
       brandNewResource.setDescription1(descriptionV);
       brandNewResource.setVersion1(version.getValue());
-      brandNewResource.setStatus1(status.getValue());
+      brandNewResource.setPublicationStatus1(publicationStatus.getValue());
       newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
 
