@@ -122,8 +122,9 @@ public class FoldersResource extends AbstractFolderServerResource {
     String normalizedName = folderSession.sanitizeName(nameV);
     if (!normalizedName.equals(nameV)) {
       return CedarResponse.badRequest()
-          .errorKey(CedarErrorKey.INVALID_FOLDER_NAME)
+          .errorKey(CedarErrorKey.CREATE_INVALID_FOLDER_NAME)
           .errorMessage("The new folder name contains invalid characters!")
+          .parameter("name", name.stringValue())
           .build();
     }
 
@@ -225,8 +226,9 @@ public class FoldersResource extends AbstractFolderServerResource {
       String normalizedName = folderSession.sanitizeName(nameV);
       if (!normalizedName.equals(nameV)) {
         return CedarResponse.badRequest()
-            .errorKey(CedarErrorKey.INVALID_FOLDER_NAME)
+            .errorKey(CedarErrorKey.UPDATE_INVALID_FOLDER_NAME)
             .errorMessage("The folder name contains invalid characters!")
+            .parameter("name", name.stringValue())
             .build();
       }
     }
