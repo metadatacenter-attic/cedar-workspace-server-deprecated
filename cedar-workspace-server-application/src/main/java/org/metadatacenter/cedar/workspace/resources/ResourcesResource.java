@@ -137,6 +137,9 @@ public class ResourcesResource extends AbstractFolderServerResource {
       brandNewResource.setDescription1(descriptionV);
       brandNewResource.setVersion1(versionString);
       brandNewResource.setPublicationStatus1(publicationStatusString);
+      if (nodeType.isVersioned()) {
+        brandNewResource.setLatestVersion(true);
+      }
       newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
 

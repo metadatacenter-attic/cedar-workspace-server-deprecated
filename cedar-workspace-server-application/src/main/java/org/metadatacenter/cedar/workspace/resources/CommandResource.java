@@ -121,6 +121,11 @@ public class CommandResource extends AbstractFolderServerResource {
     brandNewResource.setDescription1(sourceResource.getDescription());
     brandNewResource.setVersion1(versionString);
     brandNewResource.setPublicationStatus1(publicationStatusString);
+    if (nodeType.isVersioned()) {
+      brandNewResource.setLatestVersion(true);
+    }
+
+    folderSession.unsetLatestVersion(sourceResource.getId());
     FolderServerResource newResource = folderSession.createResourceAsChildOfId(brandNewResource, folderId);
     if (newResource == null) {
       BackendCallResult backendCallResult = new BackendCallResult();
@@ -217,6 +222,9 @@ public class CommandResource extends AbstractFolderServerResource {
       brandNewResource.setDescription1(descriptionV);
       brandNewResource.setVersion1(version.getValue());
       brandNewResource.setPublicationStatus1(publicationStatus.getValue());
+      if (nodeType.isVersioned()) {
+        brandNewResource.setLatestVersion(true);
+      }
       newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
 

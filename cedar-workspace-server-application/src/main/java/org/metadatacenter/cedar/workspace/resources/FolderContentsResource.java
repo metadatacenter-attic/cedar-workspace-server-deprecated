@@ -42,58 +42,6 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     super(cedarConfig);
   }
 
-  /*@GET
-  @Timed
-  @Path("/contents")
-  public Response findFolderContentsByPath(@QueryParam(QP_PATH) Optional<String> pathParam,
-                                           @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
-                                           @QueryParam(QP_SORT) Optional<String> sort,
-                                           @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
-                                           @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
-      CedarException {
-
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
-    c.must(c.user()).be(LoggedIn);
-
-    // Test path
-    String path = null;
-    if (pathParam.isPresent()) {
-      path = pathParam.get();
-    }
-    if (path != null) {
-      path = path.trim();
-    }
-
-    if (path == null || path.length() == 0) {
-      throw new IllegalArgumentException("You need to specify path as a request parameter!");
-    }
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    String normalizedPath = folderSession.normalizePath(path);
-    if (!normalizedPath.equals(path)) {
-      throw new IllegalArgumentException("The path is not in normalized form!");
-    }
-
-    FolderServerFolder folder = folderSession.findFolderByPath(path);
-    if (folder == null) {
-      return CedarResponse.notFound().build();
-    }
-
-    UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI absoluteURI = builder.queryParam(QP_PATH, pathParam)
-        .queryParam(QP_RESOURCE_TYPES, resourceTypes)
-        .queryParam(QP_SORT, sort)
-        .build();
-
-    List<FolderServerFolder> pathInfo = folderSession.findFolderPathByPath(path);
-
-    return findFolderContentsFiltered(folderSession, folder, absoluteURI.toString(), pathInfo, resourceTypes, sort,
-    limitParam,
-        offsetParam);
-  }
-  */
-
   @GET
   @Timed
   @Path("/{id}/contents")
