@@ -8,10 +8,7 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.model.BiboStatus;
-import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.FolderOrResource;
-import org.metadatacenter.model.ResourceVersion;
+import org.metadatacenter.model.*;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
@@ -308,8 +305,16 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .errorMessage("The resource can not be found by id")
           .build();
     } else {
+      ResourceUri previousVersion = null;
+      if (resource.getType().isVersioned() && resource.isLatestVersion()) {
+        previousVersion = resource.getPreviousVersion();
+      }
+
       boolean deleted = folderSession.deleteResourceById(id, CedarNodeType.ELEMENT);
       if (deleted) {
+        if (previousVersion != null) {
+          folderSession.setLatestVersion(previousVersion.getValue());
+        }
         return Response.noContent().build();
       } else {
         return CedarResponse.internalServerError()
