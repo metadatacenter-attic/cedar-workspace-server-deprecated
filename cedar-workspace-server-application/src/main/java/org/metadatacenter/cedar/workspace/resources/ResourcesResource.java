@@ -313,6 +313,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
       boolean deleted = folderSession.deleteResourceById(id, CedarNodeType.ELEMENT);
       if (deleted) {
         if (previousVersion != null) {
+          // TODO: this is a system level call, maybe should be executed with such a session?
           folderSession.setLatestVersion(previousVersion.getValue());
         }
         return Response.noContent().build();
