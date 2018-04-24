@@ -17,8 +17,7 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
-import org.metadatacenter.server.neo4j.NodeLabel;
-import org.metadatacenter.server.neo4j.parameter.NodeProperty;
+import org.metadatacenter.server.neo4j.cypher.NodeProperty;
 import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
@@ -123,8 +122,9 @@ public class FoldersResource extends AbstractFolderServerResource {
     String normalizedName = folderSession.sanitizeName(nameV);
     if (!normalizedName.equals(nameV)) {
       return CedarResponse.badRequest()
-          .errorKey(CedarErrorKey.INVALID_FOLDER_NAME)
+          .errorKey(CedarErrorKey.CREATE_INVALID_FOLDER_NAME)
           .errorMessage("The new folder name contains invalid characters!")
+          .parameter("name", name.stringValue())
           .build();
     }
 
@@ -147,7 +147,10 @@ public class FoldersResource extends AbstractFolderServerResource {
 
     String descriptionV = description.stringValue();
 
-    newFolder = folderSession.createFolderAsChildOfId(parentFolder.getId(), nameV, descriptionV);
+    FolderServerFolder brandNewFolder = new FolderServerFolder();
+    brandNewFolder.setName1(nameV);
+    brandNewFolder.setDescription1(descriptionV);
+    newFolder = folderSession.createFolderAsChildOfId(brandNewFolder, parentFolder.getId());
 
     if (newFolder != null) {
       UriBuilder builder = uriInfo.getAbsolutePathBuilder();
@@ -223,8 +226,9 @@ public class FoldersResource extends AbstractFolderServerResource {
       String normalizedName = folderSession.sanitizeName(nameV);
       if (!normalizedName.equals(nameV)) {
         return CedarResponse.badRequest()
-            .errorKey(CedarErrorKey.INVALID_FOLDER_NAME)
+            .errorKey(CedarErrorKey.UPDATE_INVALID_FOLDER_NAME)
             .errorMessage("The folder name contains invalid characters!")
+            .parameter("name", name.stringValue())
             .build();
       }
     }

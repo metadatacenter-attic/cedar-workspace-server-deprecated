@@ -15,7 +15,11 @@ import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
-import org.metadatacenter.util.http.*;
+import org.metadatacenter.server.security.model.user.ResourcePublicationStatusFilter;
+import org.metadatacenter.server.security.model.user.ResourceVersionFilter;
+import org.metadatacenter.util.http.CedarResponse;
+import org.metadatacenter.util.http.LinkHeaderUtil;
+import org.metadatacenter.util.http.PagedSortedTypedQuery;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -38,63 +42,13 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     super(cedarConfig);
   }
 
-  /*@GET
-  @Timed
-  @Path("/contents")
-  public Response findFolderContentsByPath(@QueryParam(QP_PATH) Optional<String> pathParam,
-                                           @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
-                                           @QueryParam(QP_SORT) Optional<String> sort,
-                                           @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
-                                           @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
-      CedarException {
-
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
-    c.must(c.user()).be(LoggedIn);
-
-    // Test path
-    String path = null;
-    if (pathParam.isPresent()) {
-      path = pathParam.get();
-    }
-    if (path != null) {
-      path = path.trim();
-    }
-
-    if (path == null || path.length() == 0) {
-      throw new IllegalArgumentException("You need to specify path as a request parameter!");
-    }
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    String normalizedPath = folderSession.normalizePath(path);
-    if (!normalizedPath.equals(path)) {
-      throw new IllegalArgumentException("The path is not in normalized form!");
-    }
-
-    FolderServerFolder folder = folderSession.findFolderByPath(path);
-    if (folder == null) {
-      return CedarResponse.notFound().build();
-    }
-
-    UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI absoluteURI = builder.queryParam(QP_PATH, pathParam)
-        .queryParam(QP_RESOURCE_TYPES, resourceTypes)
-        .queryParam(QP_SORT, sort)
-        .build();
-
-    List<FolderServerFolder> pathInfo = folderSession.findFolderPathByPath(path);
-
-    return findFolderContentsFiltered(folderSession, folder, absoluteURI.toString(), pathInfo, resourceTypes, sort,
-    limitParam,
-        offsetParam);
-  }
-  */
-
   @GET
   @Timed
   @Path("/{id}/contents")
   public Response findFolderContentsById(@PathParam(PP_ID) String id,
                                          @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
+                                         @QueryParam(QP_VERSION) Optional<String> versionParam,
+                                         @QueryParam(QP_PUBLICATION_STATUS) Optional<String> publicationStatusParam,
                                          @QueryParam(QP_SORT) Optional<String> sortParam,
                                          @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
                                          @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
@@ -113,6 +67,8 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     PagedSortedTypedQuery pagedSortedTypedQuery = new PagedSortedTypedQuery(
         cedarConfig.getFolderRESTAPI().getPagination())
         .resourceTypes(resourceTypes)
+        .version(versionParam)
+        .publicationStatus(publicationStatusParam)
         .sort(sortParam)
         .limit(limitParam)
         .offset(offsetParam);
@@ -132,6 +88,8 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
     URI absoluteURI = builder
         .queryParam(QP_RESOURCE_TYPES, pagedSortedTypedQuery.getNodeTypesAsString())
+        .queryParam(QP_VERSION, pagedSortedTypedQuery.getVersionAsString())
+        .queryParam(QP_PUBLICATION_STATUS, pagedSortedTypedQuery.getPublicationStatusAsString())
         .queryParam(QP_SORT, pagedSortedTypedQuery.getSortListAsString())
         .build();
 
@@ -142,29 +100,33 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
 
   private Response findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String
-      absoluteUrl, List<FolderServerFolder> pathInfo, PagedSortedTypedQuery pagedSortedTypedQuery) throws
-      CedarException {
+      absoluteUrl, List<FolderServerFolder> pathInfo, PagedSortedTypedQuery pagedSortedTypedQuery) {
 
     int limit = pagedSortedTypedQuery.getLimit();
     int offset = pagedSortedTypedQuery.getOffset();
     List<String> sortList = pagedSortedTypedQuery.getSortList();
     List<CedarNodeType> nodeTypeList = pagedSortedTypedQuery.getNodeTypeList();
+    ResourceVersionFilter version = pagedSortedTypedQuery.getVersion();
+    ResourcePublicationStatusFilter publicationStatus = pagedSortedTypedQuery.getPublicationStatus();
 
     FolderServerNodeListResponse r = new FolderServerNodeListResponse();
     r.setNodeListQueryType(NodeListQueryType.FOLDER_CONTENT);
 
     NodeListRequest req = new NodeListRequest();
     req.setNodeTypes(nodeTypeList);
+    req.setVersion(version);
+    req.setPublicationStatus(publicationStatus);
     req.setLimit(limit);
     req.setOffset(offset);
     req.setSort(sortList);
 
     r.setRequest(req);
 
-    List<FolderServerNode> resources = folderSession.findFolderContentsFiltered(folder.getId(), nodeTypeList, limit,
-        offset, sortList);
+    List<FolderServerNode> resources = folderSession.findFolderContentsFiltered(folder.getId(), nodeTypeList,
+        version, publicationStatus, limit, offset, sortList);
 
-    long total = folderSession.findFolderContentsFilteredCount(folder.getId(), nodeTypeList);
+    long total = folderSession.findFolderContentsFilteredCount(folder.getId(), nodeTypeList, version,
+        publicationStatus);
 
     r.setTotalCount(total);
     r.setCurrentOffset(offset);

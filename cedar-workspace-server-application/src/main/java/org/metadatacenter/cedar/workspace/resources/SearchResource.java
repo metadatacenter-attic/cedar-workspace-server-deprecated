@@ -14,6 +14,8 @@ import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
+import org.metadatacenter.server.security.model.user.ResourcePublicationStatusFilter;
+import org.metadatacenter.server.security.model.user.ResourceVersionFilter;
 import org.metadatacenter.util.http.CedarURIBuilder;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 import org.metadatacenter.util.http.PagedSortedTypedSearchQuery;
@@ -43,7 +45,9 @@ public class SearchResource extends AbstractFolderServerResource {
   @Path("/search")
   public Response sharedWithMe(@QueryParam(QP_Q) Optional<String> q,
                                @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
-                               @QueryParam(QP_DERIVED_FROM_ID) Optional<String> derivedFromId,
+                               @QueryParam(QP_VERSION) Optional<String> versionParam,
+                               @QueryParam(QP_PUBLICATION_STATUS) Optional<String> publicationStatusParam,
+                               @QueryParam(QP_IS_BASED_ON) Optional<String> isBasedOn,
                                @QueryParam(QP_SORT) Optional<String> sortParam,
                                @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
                                @QueryParam(QP_OFFSET) Optional<Integer> offsetParam,
@@ -56,7 +60,9 @@ public class SearchResource extends AbstractFolderServerResource {
         cedarConfig.getFolderRESTAPI().getPagination())
         .q(q)
         .resourceTypes(resourceTypes)
-        .derivedFromId(derivedFromId)
+        .version(versionParam)
+        .publicationStatus(publicationStatusParam)
+        .isBasedOn(isBasedOn)
         .sort(sortParam)
         .limit(limitParam)
         .offset(offsetParam);
@@ -66,20 +72,24 @@ public class SearchResource extends AbstractFolderServerResource {
     int offset = pagedSearchQuery.getOffset();
     List<String> sortList = pagedSearchQuery.getSortList();
     List<CedarNodeType> nodeTypeList = pagedSearchQuery.getNodeTypeList();
+    ResourceVersionFilter version = pagedSearchQuery.getVersion();
+    ResourcePublicationStatusFilter publicationStatus = pagedSearchQuery.getPublicationStatus();
 
     FolderServerNodeListResponse r = new FolderServerNodeListResponse();
 
     NodeListRequest req = new NodeListRequest();
     req.setNodeTypes(nodeTypeList);
+    req.setVersion(version);
+    req.setPublicationStatus(publicationStatus);
     req.setLimit(limit);
     req.setOffset(offset);
     req.setSort(sortList);
     req.setQ(q.orElse(null));
-    req.setDerivedFromId(derivedFromId.orElse(null));
+    req.setIsBasedOn(isBasedOn.orElse(null));
 
     r.setRequest(req);
 
-    NodeListQueryType nlqt = NodeListQueryTypeDetector.detect(q, derivedFromId, sharing);
+    NodeListQueryType nlqt = NodeListQueryTypeDetector.detect(q, isBasedOn, sharing);
     r.setNodeListQueryType(nlqt);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
@@ -88,11 +98,11 @@ public class SearchResource extends AbstractFolderServerResource {
     long total = 0;
 
     if (nlqt == NodeListQueryType.VIEW_SHARED_WITH_ME) {
-      resources = folderSession.viewSharedWithMe(nodeTypeList, limit, offset, sortList);
-      total = folderSession.viewSharedWithMeCount(nodeTypeList);
+      resources = folderSession.viewSharedWithMe(nodeTypeList, version, publicationStatus, limit, offset, sortList);
+      total = folderSession.viewSharedWithMeCount(nodeTypeList, version, publicationStatus);
     } else if (nlqt == NodeListQueryType.VIEW_ALL) {
-      resources = folderSession.viewAll(nodeTypeList, limit, offset, sortList);
-      total = folderSession.viewAllCount(nodeTypeList);
+      resources = folderSession.viewAll(nodeTypeList, version, publicationStatus, limit, offset, sortList);
+      total = folderSession.viewAllCount(nodeTypeList, version, publicationStatus);
     } else {
       throw new CedarProcessingException("Search type not supported by Workspace server")
           .parameter("resolvedSearchType", nlqt.getValue());
@@ -105,6 +115,8 @@ public class SearchResource extends AbstractFolderServerResource {
 
     CedarURIBuilder builder = new CedarURIBuilder(uriInfo)
         .queryParam(QP_RESOURCE_TYPES, resourceTypes)
+        .queryParam(QP_VERSION, versionParam)
+        .queryParam(QP_PUBLICATION_STATUS, publicationStatusParam)
         .queryParam(QP_SORT, sortParam)
         .queryParam(QP_LIMIT, limitParam)
         .queryParam(QP_OFFSET, offsetParam);
