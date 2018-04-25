@@ -127,6 +127,7 @@ public class CommandResource extends AbstractFolderServerResource {
     brandNewResource.setVersion1(versionString);
     brandNewResource.setPublicationStatus1(publicationStatusString);
     if (nodeType.isVersioned()) {
+      brandNewResource.setPreviousVersion1(oldId);
       brandNewResource.setLatestVersion(true);
     }
 
@@ -139,8 +140,6 @@ public class CommandResource extends AbstractFolderServerResource {
           .message("There was an error while creating the draft version of the resource");
       throw new CedarBackendException(backendCallResult);
     } else {
-      folderSession.setPreviousVersion(newId, oldId);
-
       boolean propagateSharing = Boolean.parseBoolean(propagateSharingString);
 
       if (propagateSharing) {
