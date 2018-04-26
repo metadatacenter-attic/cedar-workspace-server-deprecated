@@ -98,7 +98,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
     CedarParameter publicationStatusP = c.request().getRequestBody().get("publicationStatus");
 
 
-    if (nodeType != CedarNodeType.INSTANCE) {
+    if (nodeType.isVersioned()) {
       c.must(versionP).be(NonEmpty);
       c.must(publicationStatusP).be(NonEmpty);
     }
@@ -253,7 +253,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
     )) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.MISSING_DATA)
-          .errorMessage("No known data was supplied to the request! Known fields are: name, description, " +
+          .errorMessage("No known data was supplied to the request! Possible fields are: name, description, " +
               PAV_VERSION + ", " + BIBO_STATUS)
           .build();
     }
@@ -412,6 +412,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
       } else if (resource.getType() == CedarNodeType.ELEMENT) {
         return Response.ok().entity(resource).build();
       } else if (resource.getType() == CedarNodeType.TEMPLATE) {
+        return Response.ok().entity(resource).build();
+      } else if (resource.getType() == CedarNodeType.FIELD) {
         return Response.ok().entity(resource).build();
       }
       return CedarResponse.badRequest()
