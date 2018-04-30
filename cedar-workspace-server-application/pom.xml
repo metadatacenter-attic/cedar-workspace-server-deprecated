@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-workspace-server</artifactId>
-    <version>1.7.0</version>
+    <version>1.8.0</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
@@ -15,6 +15,11 @@
   <name>CEDAR Workspace Server Dropwizard Application</name>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.metadatacenter</groupId>
+      <artifactId>cedar-server-globals</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.metadatacenter</groupId>

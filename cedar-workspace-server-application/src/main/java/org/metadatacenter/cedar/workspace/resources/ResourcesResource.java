@@ -8,17 +8,17 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.FolderOrResource;
+import org.metadatacenter.model.*;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerResource;
+import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
-import org.metadatacenter.server.neo4j.NodeLabel;
-import org.metadatacenter.server.neo4j.parameter.NodeProperty;
+import org.metadatacenter.server.VersionServiceSession;
+import org.metadatacenter.server.neo4j.cypher.NodeProperty;
 import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
@@ -39,6 +39,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
+import static org.metadatacenter.model.ModelNodeNames.BIBO_STATUS;
+import static org.metadatacenter.model.ModelNodeNames.PAV_VERSION;
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
 import static org.metadatacenter.rest.assertion.GenericAssertions.NonEmpty;
 
@@ -55,6 +57,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @POST
   @Timed
   public Response createResource() throws CedarException {
+    //TODO: use constants here, instead of strings. Also replace in ResourceServer code
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
 
     c.must(c.user()).be(LoggedIn);
@@ -90,13 +93,24 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     }
 
+    CedarParameter versionP = c.request().getRequestBody().get("version");
+
+    CedarParameter publicationStatusP = c.request().getRequestBody().get("publicationStatus");
+
+
+    if (nodeType.isVersioned()) {
+      c.must(versionP).be(NonEmpty);
+      c.must(publicationStatusP).be(NonEmpty);
+    }
+
+    String versionString = versionP.stringValue();
+    ResourceVersion version = ResourceVersion.forValue(versionString);
+
+    String publicationStatusString = publicationStatusP.stringValue();
+    BiboStatus publicationStatus = BiboStatus.forValue(publicationStatusString);
 
     String descriptionV = null;
     CedarParameter description = c.request().getRequestBody().get("description");
-    // let's not read resource description for instances
-//    if (nodeType != CedarNodeType.INSTANCE) {
-//      c.must(description).be(NonEmpty);
-//    }
     descriptionV = description.stringValue();
 
     // check existence of parent folder
@@ -113,9 +127,17 @@ public class ResourcesResource extends AbstractFolderServerResource {
     } else {
       // Later we will guarantee some kind of uniqueness for the resource names
       // Currently we allow duplicate names, the id is the PK
-      NodeLabel nodeLabel = NodeLabel.forCedarNodeType(nodeType);
-      newResource = folderSession.createResourceAsChildOfId(parentId, id, nodeType, name
-          .stringValue(), descriptionV, nodeLabel);
+      FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
+      brandNewResource.setId1(id);
+      brandNewResource.setType(nodeType);
+      brandNewResource.setName1(name.stringValue());
+      brandNewResource.setDescription1(descriptionV);
+      brandNewResource.setVersion1(versionString);
+      brandNewResource.setPublicationStatus1(publicationStatusString);
+      if (nodeType.isVersioned()) {
+        brandNewResource.setLatestVersion(true);
+      }
+      newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
 
     if (newResource != null) {
@@ -142,6 +164,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
     PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
+    VersionServiceSession versionSession = CedarDataServices.getVersionServiceSession(c);
 
     FolderServerResource resource = folderSession.findResourceById(id);
     if (resource == null) {
@@ -164,6 +187,14 @@ public class ResourcesResource extends AbstractFolderServerResource {
       if (permissionSession.userHasWriteAccessToResource(id)) {
         resource.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
       }
+      if (versionSession.userCanPerformVersioning(resource)) {
+        if (versionSession.resourceCanBePublished(resource)) {
+          resource.addCurrentUserPermission(NodePermission.PUBLISH);
+        }
+        if (versionSession.resourceCanBeDrafted(resource)) {
+          resource.addCurrentUserPermission(NodePermission.CREATE_DRAFT);
+        }
+      }
       return Response.ok().entity(resource).build();
     }
   }
@@ -180,7 +211,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
     CedarParameter name = c.request().getRequestBody().get("name");
-
     String nameV = null;
     if (!name.isEmpty()) {
       nameV = name.stringValue();
@@ -188,17 +218,43 @@ public class ResourcesResource extends AbstractFolderServerResource {
     }
 
     CedarParameter description = c.request().getRequestBody().get("description");
-
     String descriptionV = null;
     if (!description.isEmpty()) {
       descriptionV = description.stringValue();
       descriptionV = descriptionV.trim();
     }
 
-    if ((name == null || name.isEmpty()) && (description == null || description.isEmpty())) {
+    CedarParameter newVersionParam = c.request().getRequestBody().get("version");
+    ResourceVersion newVersion = null;
+    if (!newVersionParam.isEmpty()) {
+      newVersion = ResourceVersion.forValueWithValidation(newVersionParam.stringValue());
+    }
+    if (!newVersionParam.isEmpty() && !newVersion.isValid()) {
       return CedarResponse.badRequest()
-          .errorKey(CedarErrorKey.MISSING_NAME_AND_DESCRIPTION)
-          .errorMessage("You must supply the new description or the new name of the resource!")
+          .errorKey(CedarErrorKey.INVALID_DATA)
+          .parameter("version", newVersionParam.stringValue())
+          .build();
+    }
+
+    CedarParameter newPublicationStatusParam = c.request().getRequestBody().get("publicationStatus");
+    BiboStatus newPublicationStatus = null;
+    if (!newPublicationStatusParam.isEmpty()) {
+      newPublicationStatus = BiboStatus.forValue(newPublicationStatusParam.stringValue());
+    }
+    if (!newPublicationStatusParam.isEmpty() && newPublicationStatus == null) {
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.INVALID_DATA)
+          .parameter("publicationStatus", newPublicationStatusParam.stringValue())
+          .build();
+    }
+
+    if ((name == null || name.isEmpty()) && (description == null || description.isEmpty()) &&
+        (newVersionParam == null || newVersionParam.isEmpty()) && (newPublicationStatusParam == null || newPublicationStatusParam.isEmpty()
+    )) {
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.MISSING_DATA)
+          .errorMessage("No known data was supplied to the request! Possible fields are: name, description, " +
+              PAV_VERSION + ", " + BIBO_STATUS)
           .build();
     }
 
@@ -211,11 +267,17 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     } else {
       Map<NodeProperty, String> updateFields = new HashMap<>();
-      if (description != null) {
+      if (description != null && !description.isEmpty()) {
         updateFields.put(NodeProperty.DESCRIPTION, descriptionV);
       }
-      if (name != null) {
+      if (name != null && !name.isEmpty()) {
         updateFields.put(NodeProperty.NAME, nameV);
+      }
+      if (newVersion != null && newVersion.isValid()) {
+        updateFields.put(NodeProperty.VERSION, newVersion.getValue());
+      }
+      if (newPublicationStatus != null) {
+        updateFields.put(NodeProperty.PUBLICATION_STATUS, newPublicationStatus.getValue());
       }
       FolderServerResource updatedResource = folderSession.updateResourceById(id, resource.getType(), updateFields);
       if (updatedResource == null) {
@@ -243,8 +305,17 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .errorMessage("The resource can not be found by id")
           .build();
     } else {
+      ResourceUri previousVersion = null;
+      if (resource.getType().isVersioned() && resource.isLatestVersion()) {
+        previousVersion = resource.getPreviousVersion();
+      }
+
       boolean deleted = folderSession.deleteResourceById(id, CedarNodeType.ELEMENT);
       if (deleted) {
+        if (previousVersion != null) {
+          // TODO: this is a system level call, maybe should be executed with such a session?
+          folderSession.setLatestVersion(previousVersion.getValue());
+        }
         return Response.noContent().build();
       } else {
         return CedarResponse.internalServerError()
@@ -316,5 +387,42 @@ public class ResourcesResource extends AbstractFolderServerResource {
       return Response.ok().entity(permissions).build();
     }
   }
+
+  @GET
+  @Timed
+  @Path("/{id}/report")
+  public Response getReport(@PathParam(PP_ID) String id) throws CedarException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    c.must(c.user()).be(LoggedIn);
+
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
+
+    FolderServerResource resource = folderSession.findResourceById(id);
+    if (resource == null) {
+      return CedarResponse.notFound()
+          .id(id)
+          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
+          .errorMessage("The resource can not be found by id")
+          .build();
+    } else {
+      if (resource.getType() == CedarNodeType.INSTANCE) {
+        //CedarNodePermissions permissions = permissionSession.getInstanceReport(id);
+        return Response.ok().entity(resource).build();
+      } else if (resource.getType() == CedarNodeType.ELEMENT) {
+        return Response.ok().entity(resource).build();
+      } else if (resource.getType() == CedarNodeType.TEMPLATE) {
+        return Response.ok().entity(resource).build();
+      } else if (resource.getType() == CedarNodeType.FIELD) {
+        return Response.ok().entity(resource).build();
+      }
+      return CedarResponse.badRequest()
+          .errorKey(CedarErrorKey.INVALID_DATA)
+          .errorMessage("Invalid resource type")
+          .parameter("nodeType", resource.getType().getValue())
+          .build();
+    }
+  }
+
 
 }
