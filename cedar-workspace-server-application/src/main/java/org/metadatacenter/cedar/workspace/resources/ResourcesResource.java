@@ -306,6 +306,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     } else {
       ResourceUri previousVersion = null;
+      log.info("resource type:" + resource.getType());
       if (resource.getType().isVersioned() && resource.isLatestVersion()) {
         previousVersion = resource.getPreviousVersion();
       }
