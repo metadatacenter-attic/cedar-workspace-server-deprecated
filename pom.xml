@@ -5,12 +5,12 @@
   <parent>
     <groupId>org.metadatacenter</groupId>
     <artifactId>cedar-parent</artifactId>
-    <version>1.8.2</version>
+    <version>1.8.3</version>
   </parent>
 
   <groupId>org.metadatacenter</groupId>
   <artifactId>cedar-workspace-server</artifactId>
-  <version>1.8.2</version>
+  <version>1.8.3</version>
   <packaging>pom</packaging>
 
   <name>CEDAR Workspace Server</name>
@@ -20,7 +20,7 @@
     <connection>scm:git:git@github.com:metadatacenter/cedar-workspace-server.git</connection>
     <developerConnection>scm:git:git@github.com:metadatacenter/cedar-workspace-server.git</developerConnection>
     <url>https://github.com/metadatacenter/cedar-workspace-server</url>
-    <tag>release-1.8.2</tag>
+    <tag>release-1.8.3</tag>
   </scm>
 
   <modules>
