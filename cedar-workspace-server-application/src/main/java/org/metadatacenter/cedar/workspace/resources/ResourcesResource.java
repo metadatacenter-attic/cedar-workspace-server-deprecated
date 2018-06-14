@@ -10,6 +10,7 @@ import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.*;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
+import org.metadatacenter.model.folderserver.FolderServerInstance;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
@@ -97,10 +98,14 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     CedarParameter publicationStatusP = c.request().getRequestBody().get("publicationStatus");
 
+    CedarParameter isBasedOnP = c.request().getRequestBody().get("isBasedOn");
 
     if (nodeType.isVersioned()) {
       c.must(versionP).be(NonEmpty);
       c.must(publicationStatusP).be(NonEmpty);
+    }
+    if (CedarNodeType.INSTANCE.equals(nodeType.getValue())) {
+      c.must(isBasedOnP).be(NonEmpty);
     }
 
     String versionString = versionP.stringValue();
@@ -108,6 +113,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     String publicationStatusString = publicationStatusP.stringValue();
     BiboStatus publicationStatus = BiboStatus.forValue(publicationStatusString);
+
+    String isBasedOnString = isBasedOnP.stringValue();
 
     String descriptionV = null;
     CedarParameter description = c.request().getRequestBody().get("description");
@@ -136,6 +143,10 @@ public class ResourcesResource extends AbstractFolderServerResource {
       brandNewResource.setPublicationStatus1(publicationStatusString);
       if (nodeType.isVersioned()) {
         brandNewResource.setLatestVersion(true);
+      }
+      if (CedarNodeType.INSTANCE.getValue().equals(nodeType.getValue())) {
+        FolderServerInstance brandNewInstance = (FolderServerInstance)brandNewResource;
+        brandNewInstance.setIsBasedOn1(isBasedOnString);
       }
       newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
