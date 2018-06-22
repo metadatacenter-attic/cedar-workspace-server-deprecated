@@ -8,7 +8,8 @@ import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
-import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.model.folderserverextract.FolderServerFolderExtract;
+import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
 import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
@@ -93,14 +94,14 @@ public class FolderContentsResource extends AbstractFolderServerResource {
         .queryParam(QP_SORT, pagedSortedTypedQuery.getSortListAsString())
         .build();
 
-    List<FolderServerFolder> pathInfo = folderSession.findFolderPath(folder);
+    List<FolderServerFolderExtract> pathInfo = folderSession.findFolderPathExtract(folder);
 
     return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, pagedSortedTypedQuery);
   }
 
 
   private Response findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String
-      absoluteUrl, List<FolderServerFolder> pathInfo, PagedSortedTypedQuery pagedSortedTypedQuery) {
+      absoluteUrl, List<FolderServerFolderExtract> pathInfo, PagedSortedTypedQuery pagedSortedTypedQuery) {
 
     int limit = pagedSortedTypedQuery.getLimit();
     int offset = pagedSortedTypedQuery.getOffset();
@@ -122,8 +123,8 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     r.setRequest(req);
 
-    List<FolderServerNode> resources = folderSession.findFolderContentsFiltered(folder.getId(), nodeTypeList,
-        version, publicationStatus, limit, offset, sortList);
+    List<FolderServerNodeExtract> resources = folderSession.findFolderContentsExtractFiltered(folder.getId(),
+        nodeTypeList, version, publicationStatus, limit, offset, sortList);
 
     long total = folderSession.findFolderContentsFilteredCount(folder.getId(), nodeTypeList, version,
         publicationStatus);
