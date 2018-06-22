@@ -4,7 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
 import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
@@ -62,7 +62,7 @@ public class NodesResource extends AbstractFolderServerResource {
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
     // Retrieve all resources
-    List<FolderServerNode> resources = folderSession.findAllNodes(limit, offset, sortList);
+    List<FolderServerNodeExtract> resources = folderSession.findAllNodes(limit, offset, sortList);
 
     // Build response
     FolderServerNodeListResponse r = new FolderServerNodeListResponse();
