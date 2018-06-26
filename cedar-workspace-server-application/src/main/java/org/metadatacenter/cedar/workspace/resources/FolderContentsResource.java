@@ -8,7 +8,6 @@ import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
-import org.metadatacenter.model.folderserverextract.FolderServerFolderExtract;
 import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
 import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
@@ -94,14 +93,14 @@ public class FolderContentsResource extends AbstractFolderServerResource {
         .queryParam(QP_SORT, pagedSortedTypedQuery.getSortListAsString())
         .build();
 
-    List<FolderServerFolderExtract> pathInfo = folderSession.findFolderPathExtract(folder);
+    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(folder);
 
     return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, pagedSortedTypedQuery);
   }
 
 
   private Response findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String
-      absoluteUrl, List<FolderServerFolderExtract> pathInfo, PagedSortedTypedQuery pagedSortedTypedQuery) {
+      absoluteUrl, List<FolderServerNodeExtract> pathInfo, PagedSortedTypedQuery pagedSortedTypedQuery) {
 
     int limit = pagedSortedTypedQuery.getLimit();
     int offset = pagedSortedTypedQuery.getOffset();

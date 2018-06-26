@@ -13,6 +13,7 @@ import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerInstance;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
+import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
@@ -37,6 +38,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
@@ -145,7 +147,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
         brandNewResource.setLatestVersion(true);
       }
       if (CedarNodeType.INSTANCE.getValue().equals(nodeType.getValue())) {
-        FolderServerInstance brandNewInstance = (FolderServerInstance)brandNewResource;
+        FolderServerInstance brandNewInstance = (FolderServerInstance) brandNewResource;
         brandNewInstance.setIsBasedOn1(isBasedOnString);
       }
       newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
@@ -206,6 +208,10 @@ public class ResourcesResource extends AbstractFolderServerResource {
           resource.addCurrentUserPermission(NodePermission.CREATE_DRAFT);
         }
       }
+
+      List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
+      resource.setPathInfo(pathInfo);
+
       return Response.ok().entity(resource).build();
     }
   }
@@ -260,7 +266,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
     }
 
     if ((name == null || name.isEmpty()) && (description == null || description.isEmpty()) &&
-        (newVersionParam == null || newVersionParam.isEmpty()) && (newPublicationStatusParam == null || newPublicationStatusParam.isEmpty()
+        (newVersionParam == null || newVersionParam.isEmpty()) && (newPublicationStatusParam == null ||
+        newPublicationStatusParam.isEmpty()
     )) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.MISSING_DATA)
