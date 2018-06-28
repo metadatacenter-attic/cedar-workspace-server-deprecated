@@ -14,6 +14,10 @@ import org.metadatacenter.model.folderserver.FolderServerInstance;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
+import org.metadatacenter.model.folderserverextract.FolderServerTemplateExtract;
+import org.metadatacenter.model.folderserverreport.FolderServerInstanceReport;
+import org.metadatacenter.model.folderserverreport.FolderServerResourceReport;
+import org.metadatacenter.model.folderserverreport.FolderServerTemplateReport;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
@@ -176,8 +180,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     c.must(c.user()).be(LoggedIn);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
-    VersionServiceSession versionSession = CedarDataServices.getVersionServiceSession(c);
 
     FolderServerResource resource = folderSession.findResourceById(id);
     if (resource == null) {
@@ -186,34 +188,12 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
           .errorMessage("The resource can not be found by id")
           .build();
-    } else {
-      folderSession.addPathAndParentId(resource);
-      if (permissionSession.userHasReadAccessToResource(id)) {
-        resource.addCurrentUserPermission(NodePermission.READ);
-      }
-      if (permissionSession.userHasWriteAccessToResource(id)) {
-        resource.addCurrentUserPermission(NodePermission.WRITE);
-      }
-      if (permissionSession.userCanChangeOwnerOfResource(id)) {
-        resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
-      }
-      if (permissionSession.userHasWriteAccessToResource(id)) {
-        resource.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
-      }
-      if (versionSession.userCanPerformVersioning(resource)) {
-        if (versionSession.resourceCanBePublished(resource)) {
-          resource.addCurrentUserPermission(NodePermission.PUBLISH);
-        }
-        if (versionSession.resourceCanBeDrafted(resource)) {
-          resource.addCurrentUserPermission(NodePermission.CREATE_DRAFT);
-        }
-      }
-
-      List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
-      resource.setPathInfo(pathInfo);
-
-      return Response.ok().entity(resource).build();
     }
+
+    decorateResourceWithCurrentUserPermissions(c, folderSession, resource);
+
+    return Response.ok().entity(resource).build();
+
   }
 
   @PUT
@@ -414,7 +394,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     c.must(c.user()).be(LoggedIn);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
     FolderServerResource resource = folderSession.findResourceById(id);
     if (resource == null) {
@@ -423,23 +402,91 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
           .errorMessage("The resource can not be found by id")
           .build();
+    }
+
+    decorateResourceWithCurrentUserPermissions(c, folderSession, resource);
+
+    FolderServerResourceReport resourceReport = FolderServerResourceReport.fromResource(resource);
+
+    decorateResourceWithDerivedFrom(c, folderSession, resourceReport);
+
+    if (resource.getType() == CedarNodeType.INSTANCE) {
+      decorateResourceWithIsBasedOn(c, folderSession, (FolderServerInstanceReport) resourceReport);
+    } else if (resource.getType() == CedarNodeType.FIELD) {
+      decorateResourceWithVersionHistory(c, folderSession, resourceReport);
+    } else if (resource.getType() == CedarNodeType.ELEMENT) {
+      decorateResourceWithVersionHistory(c, folderSession, resourceReport);
+    } else if (resource.getType() == CedarNodeType.TEMPLATE) {
+      decorateResourceWithNumberOfInstances(c, folderSession, (FolderServerTemplateReport) resourceReport);
+      decorateResourceWithVersionHistory(c, folderSession, resourceReport);
     } else {
-      if (resource.getType() == CedarNodeType.INSTANCE) {
-        //CedarNodePermissions permissions = permissionSession.getInstanceReport(id);
-        return Response.ok().entity(resource).build();
-      } else if (resource.getType() == CedarNodeType.ELEMENT) {
-        return Response.ok().entity(resource).build();
-      } else if (resource.getType() == CedarNodeType.TEMPLATE) {
-        return Response.ok().entity(resource).build();
-      } else if (resource.getType() == CedarNodeType.FIELD) {
-        return Response.ok().entity(resource).build();
-      }
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.INVALID_DATA)
           .errorMessage("Invalid resource type")
           .parameter("nodeType", resource.getType().getValue())
           .build();
     }
+
+    return Response.ok().entity(resourceReport).build();
+  }
+
+  private void decorateResourceWithNumberOfInstances(CedarRequestContext c, FolderServiceSession folderSession,
+                                                     FolderServerTemplateReport templateReport) {
+    templateReport.setNumberOfInstances(folderSession.getNumberOfInstances(templateReport.getId()));
+  }
+
+  private void decorateResourceWithVersionHistory(CedarRequestContext c, FolderServiceSession folderSession,
+                                                  FolderServerResourceReport resourceReport) {
+    resourceReport.setVersionHistory(folderSession.getVersionHistory(resourceReport.getId()));
+    //TODO: rename fields in NEO, which are pav: schema: sonething:
+  }
+
+  private void decorateResourceWithIsBasedOn(CedarRequestContext c, FolderServiceSession folderSession,
+                                             FolderServerInstanceReport instanceReport) {
+    if (instanceReport.getIsBasedOn() != null) {
+      instanceReport.setIsBasedOn_((FolderServerTemplateExtract) folderSession.findResourceExtractById
+          (instanceReport.getIsBasedOn()));
+    }
+  }
+
+  private void decorateResourceWithDerivedFrom(CedarRequestContext c, FolderServiceSession folderSession,
+                                               FolderServerResourceReport resourceReport) {
+    if (resourceReport.getDerivedFrom() != null) {
+      resourceReport.setDerivedFrom_(folderSession.findResourceExtractById
+          (resourceReport.getDerivedFrom()));
+    }
+  }
+
+
+  private void decorateResourceWithCurrentUserPermissions(CedarRequestContext c, FolderServiceSession folderSession,
+                                                          FolderServerResource resource) {
+    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
+    VersionServiceSession versionSession = CedarDataServices.getVersionServiceSession(c);
+    folderSession.addPathAndParentId(resource);
+    String id = resource.getId();
+    if (permissionSession.userHasReadAccessToResource(id)) {
+      resource.addCurrentUserPermission(NodePermission.READ);
+    }
+    if (permissionSession.userHasWriteAccessToResource(id)) {
+      resource.addCurrentUserPermission(NodePermission.WRITE);
+    }
+    if (permissionSession.userCanChangeOwnerOfResource(id)) {
+      resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
+    }
+    if (permissionSession.userHasWriteAccessToResource(id)) {
+      resource.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
+    }
+    if (versionSession.userCanPerformVersioning(resource)) {
+      if (versionSession.resourceCanBePublished(resource)) {
+        resource.addCurrentUserPermission(NodePermission.PUBLISH);
+      }
+      if (versionSession.resourceCanBeDrafted(resource)) {
+        resource.addCurrentUserPermission(NodePermission.CREATE_DRAFT);
+      }
+    }
+
+    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
+    resource.setPathInfo(pathInfo);
   }
 
 
