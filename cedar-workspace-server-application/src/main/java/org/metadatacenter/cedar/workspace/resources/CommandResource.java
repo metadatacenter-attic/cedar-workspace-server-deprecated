@@ -120,14 +120,14 @@ public class CommandResource extends AbstractFolderServerResource {
     ResourceVersion version = ResourceVersion.forValue(versionString);
     BiboStatus status = BiboStatus.forValue(publicationStatusString);
     FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
-    brandNewResource.setId1(newId);
+    brandNewResource.setId(newId);
     brandNewResource.setType(nodeType);
-    brandNewResource.setName1(sourceResource.getName());
-    brandNewResource.setDescription1(sourceResource.getDescription());
-    brandNewResource.setVersion1(versionString);
-    brandNewResource.setPublicationStatus1(publicationStatusString);
+    brandNewResource.setName(sourceResource.getName());
+    brandNewResource.setDescription(sourceResource.getDescription());
+    brandNewResource.setVersion(versionString);
+    brandNewResource.setPublicationStatus(publicationStatusString);
     if (nodeType.isVersioned()) {
-      brandNewResource.setPreviousVersion1(oldId);
+      brandNewResource.setPreviousVersion(oldId);
       brandNewResource.setLatestVersion(true);
     }
 
@@ -236,12 +236,12 @@ public class CommandResource extends AbstractFolderServerResource {
       // Later we will guarantee some kind of uniqueness for the resource names
       // Currently we allow duplicate names, the id is the PK
       FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
-      brandNewResource.setId1(id);
+      brandNewResource.setId(id);
       brandNewResource.setType(nodeType);
-      brandNewResource.setName1(name.stringValue());
-      brandNewResource.setDescription1(descriptionV);
-      brandNewResource.setVersion1(version.getValue());
-      brandNewResource.setPublicationStatus1(publicationStatus.getValue());
+      brandNewResource.setName(name.stringValue());
+      brandNewResource.setDescription(descriptionV);
+      brandNewResource.setVersion(version.getValue());
+      brandNewResource.setPublicationStatus(publicationStatus.getValue());
       if (nodeType.isVersioned()) {
         brandNewResource.setLatestVersion(true);
       }

@@ -141,18 +141,18 @@ public class ResourcesResource extends AbstractFolderServerResource {
       // Later we will guarantee some kind of uniqueness for the resource names
       // Currently we allow duplicate names, the id is the PK
       FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
-      brandNewResource.setId1(id);
+      brandNewResource.setId(id);
       brandNewResource.setType(nodeType);
-      brandNewResource.setName1(name.stringValue());
-      brandNewResource.setDescription1(descriptionV);
-      brandNewResource.setVersion1(versionString);
-      brandNewResource.setPublicationStatus1(publicationStatusString);
+      brandNewResource.setName(name.stringValue());
+      brandNewResource.setDescription(descriptionV);
+      brandNewResource.setVersion(versionString);
+      brandNewResource.setPublicationStatus(publicationStatusString);
       if (nodeType.isVersioned()) {
         brandNewResource.setLatestVersion(true);
       }
       if (CedarNodeType.INSTANCE.getValue().equals(nodeType.getValue())) {
         FolderServerInstance brandNewInstance = (FolderServerInstance) brandNewResource;
-        brandNewInstance.setIsBasedOn1(isBasedOnString);
+        brandNewInstance.setIsBasedOn(isBasedOnString);
       }
       newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
@@ -437,14 +437,14 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
   private void decorateResourceWithVersionHistory(CedarRequestContext c, FolderServiceSession folderSession,
                                                   FolderServerResourceReport resourceReport) {
-    resourceReport.setVersionHistory(folderSession.getVersionHistory(resourceReport.getId()));
+    resourceReport.setVersions(folderSession.getVersionHistory(resourceReport.getId()));
     //TODO: rename fields in NEO, which are pav: schema: sonething:
   }
 
   private void decorateResourceWithIsBasedOn(CedarRequestContext c, FolderServiceSession folderSession,
                                              FolderServerInstanceReport instanceReport) {
     if (instanceReport.getIsBasedOn() != null) {
-      instanceReport.setIsBasedOn_((FolderServerTemplateExtract) folderSession.findResourceExtractById
+      instanceReport.setIsBasedOnExtract((FolderServerTemplateExtract) folderSession.findResourceExtractById
           (instanceReport.getIsBasedOn()));
     }
   }
@@ -452,7 +452,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   private void decorateResourceWithDerivedFrom(CedarRequestContext c, FolderServiceSession folderSession,
                                                FolderServerResourceReport resourceReport) {
     if (resourceReport.getDerivedFrom() != null) {
-      resourceReport.setDerivedFrom_(folderSession.findResourceExtractById
+      resourceReport.setDerivedFromExtract(folderSession.findResourceExtractById
           (resourceReport.getDerivedFrom()));
     }
   }

@@ -150,8 +150,8 @@ public class FoldersResource extends AbstractFolderServerResource {
     String descriptionV = description.stringValue();
 
     FolderServerFolder brandNewFolder = new FolderServerFolder();
-    brandNewFolder.setName1(nameV);
-    brandNewFolder.setDescription1(descriptionV);
+    brandNewFolder.setName(nameV);
+    brandNewFolder.setDescription(descriptionV);
     newFolder = folderSession.createFolderAsChildOfId(brandNewFolder, parentFolder.getId());
 
     if (newFolder != null) {
