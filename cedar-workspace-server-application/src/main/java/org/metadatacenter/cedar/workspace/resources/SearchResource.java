@@ -6,7 +6,7 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
 import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListQueryTypeDetector;
 import org.metadatacenter.model.request.NodeListRequest;
@@ -94,7 +94,7 @@ public class SearchResource extends AbstractFolderServerResource {
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
-    List<FolderServerNode> resources = null;
+    List<FolderServerNodeExtract> resources = null;
     long total = 0;
 
     if (nlqt == NodeListQueryType.VIEW_SHARED_WITH_ME) {

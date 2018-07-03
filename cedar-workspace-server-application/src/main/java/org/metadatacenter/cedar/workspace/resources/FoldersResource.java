@@ -12,6 +12,7 @@ import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.FolderOrResource;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
 import org.metadatacenter.model.folderserver.FolderServerNode;
+import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
@@ -35,6 +36,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.metadatacenter.constant.CedarPathParameters.PP_ID;
@@ -148,8 +150,8 @@ public class FoldersResource extends AbstractFolderServerResource {
     String descriptionV = description.stringValue();
 
     FolderServerFolder brandNewFolder = new FolderServerFolder();
-    brandNewFolder.setName1(nameV);
-    brandNewFolder.setDescription1(descriptionV);
+    brandNewFolder.setName(nameV);
+    brandNewFolder.setDescription(descriptionV);
     newFolder = folderSession.createFolderAsChildOfId(brandNewFolder, parentFolder.getId());
 
     if (newFolder != null) {
@@ -201,6 +203,10 @@ public class FoldersResource extends AbstractFolderServerResource {
           && permissionSession.userHasWriteAccessToFolder(id)) {
         folder.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
       }
+
+      List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(folder);
+      folder.setPathInfo(pathInfo);
+
       return Response.ok().entity(folder).build();
     }
   }
