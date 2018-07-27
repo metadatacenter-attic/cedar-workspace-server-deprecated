@@ -46,7 +46,7 @@ public class SearchResource extends AbstractFolderServerResource {
   @GET
   @Timed
   @Path("/search")
-  public Response sharedWithMe(@QueryParam(QP_Q) Optional<String> q,
+  public Response search(@QueryParam(QP_Q) Optional<String> q,
                                @QueryParam(QP_ID) Optional<String> id,
                                @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
                                @QueryParam(QP_VERSION) Optional<String> versionParam,
@@ -133,12 +133,16 @@ public class SearchResource extends AbstractFolderServerResource {
     r.setResources(resources);
 
     CedarURIBuilder builder = new CedarURIBuilder(uriInfo)
+        .queryParam(QP_Q, q)
+        .queryParam(QP_ID, id)
         .queryParam(QP_RESOURCE_TYPES, resourceTypes)
         .queryParam(QP_VERSION, versionParam)
         .queryParam(QP_PUBLICATION_STATUS, publicationStatusParam)
+        .queryParam(QP_IS_BASED_ON, isBasedOn)
         .queryParam(QP_SORT, sortParam)
         .queryParam(QP_LIMIT, limitParam)
-        .queryParam(QP_OFFSET, offsetParam);
+        .queryParam(QP_OFFSET, offsetParam)
+        .queryParam(QP_SHARING, sharing);
 
     String absoluteUrl = builder.build().toString();
 
