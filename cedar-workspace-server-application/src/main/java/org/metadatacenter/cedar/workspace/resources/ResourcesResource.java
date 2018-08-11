@@ -14,6 +14,7 @@ import org.metadatacenter.model.folderserver.FolderServerInstance;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
+import org.metadatacenter.model.folderserverextract.FolderServerResourceExtract;
 import org.metadatacenter.model.folderserverextract.FolderServerTemplateExtract;
 import org.metadatacenter.model.folderserverreport.FolderServerInstanceReport;
 import org.metadatacenter.model.folderserverreport.FolderServerResourceReport;
@@ -44,7 +45,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -399,6 +399,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
 
+    PermissionServiceSession permissionServiceSession = CedarDataServices.getPermissionServiceSession(c);
+
     FolderServerResource resource = folderSession.findResourceById(id);
     if (resource == null) {
       return CedarResponse.notFound()
@@ -412,7 +414,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     FolderServerResourceReport resourceReport = FolderServerResourceReport.fromResource(resource);
 
-    decorateResourceWithDerivedFrom(c, folderSession, resourceReport);
+    decorateResourceWithDerivedFrom(folderSession, permissionServiceSession, resourceReport);
 
     if (resource.getType() == CedarNodeType.INSTANCE) {
       decorateResourceWithIsBasedOn(c, folderSession, (FolderServerInstanceReport) resourceReport);
@@ -504,11 +506,20 @@ public class ResourcesResource extends AbstractFolderServerResource {
     }
   }
 
-  private void decorateResourceWithDerivedFrom(CedarRequestContext c, FolderServiceSession folderSession,
+  private void decorateResourceWithDerivedFrom(FolderServiceSession folderSession,
+                                               PermissionServiceSession permissionServiceSession,
                                                FolderServerResourceReport resourceReport) {
     if (resourceReport.getDerivedFrom() != null) {
-      resourceReport.setDerivedFromExtract(folderSession.findResourceExtractById
-          (resourceReport.getDerivedFrom()));
+      FolderServerResourceExtract resourceExtract =
+          folderSession.findResourceExtractById(resourceReport.getDerivedFrom());
+      boolean hasReadAccess = permissionServiceSession.userHasReadAccessToResource(resourceExtract.getId());
+      if (resourceExtract != null) {
+        if (hasReadAccess) {
+          resourceReport.setDerivedFromExtract(resourceExtract);
+        } else {
+          resourceReport.setDerivedFromExtract(FolderServerNodeExtract.anonymous(resourceExtract));
+        }
+      }
     }
   }
 
