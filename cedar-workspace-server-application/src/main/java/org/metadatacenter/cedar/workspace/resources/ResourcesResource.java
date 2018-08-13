@@ -3,6 +3,7 @@ package org.metadatacenter.cedar.workspace.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.collections.map.HashedMap;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
@@ -45,6 +46,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -417,7 +419,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
     decorateResourceWithDerivedFrom(folderSession, permissionServiceSession, resourceReport);
 
     if (resource.getType() == CedarNodeType.INSTANCE) {
-      decorateResourceWithIsBasedOn(c, folderSession, (FolderServerInstanceReport) resourceReport);
+      decorateResourceWithIsBasedOn(folderSession, permissionServiceSession,
+          (FolderServerInstanceReport) resourceReport);
     } else if (resource.getType() == CedarNodeType.FIELD) {
       decorateResourceWithVersionHistory(c, folderSession, resourceReport);
     } else if (resource.getType() == CedarNodeType.ELEMENT) {
@@ -462,7 +465,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
     NodeListQueryType nlqt = NodeListQueryType.ALL_VERSIONS;
     r.setNodeListQueryType(nlqt);
 
-    List<FolderServerNodeExtract> resources = folderSession.getVersionHistory(id);
+    List<FolderServerResourceExtract> resources = folderSession.getVersionHistory(id);
     r.setResources(resources);
 
     r.setCurrentOffset(0);
@@ -495,25 +498,49 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
   private void decorateResourceWithVersionHistory(CedarRequestContext c, FolderServiceSession folderSession,
                                                   FolderServerResourceReport resourceReport) {
-    resourceReport.setVersions(folderSession.getVersionHistory(resourceReport.getId()));
+    List<FolderServerResourceExtract> allVersions = folderSession.getVersionHistory(resourceReport.getId());
+    List<FolderServerResourceExtract> allVersionsWithPermission = folderSession.getVersionHistoryWithPermission(resourceReport.getId());
+    Map<String, FolderServerResourceExtract> accessibleMap = new HashMap<>();
+    for(FolderServerResourceExtract e : allVersionsWithPermission) {
+      accessibleMap.put(e.getId(), e);
+    }
+
+    List<FolderServerResourceExtract> visibleVersions = new ArrayList<>();
+    for(FolderServerResourceExtract v : allVersions) {
+      if (accessibleMap.containsKey(v.getId())) {
+        visibleVersions.add(v);
+      } else {
+        visibleVersions.add(FolderServerNodeExtract.anonymous(v));
+      }
+    }
+    resourceReport.setVersions(visibleVersions);
   }
 
-  private void decorateResourceWithIsBasedOn(CedarRequestContext c, FolderServiceSession folderSession,
+  private void decorateResourceWithIsBasedOn(FolderServiceSession folderSession,
+                                             PermissionServiceSession permissionServiceSession,
                                              FolderServerInstanceReport instanceReport) {
     if (instanceReport.getIsBasedOn() != null) {
-      instanceReport.setIsBasedOnExtract((FolderServerTemplateExtract) folderSession.findResourceExtractById
-          (instanceReport.getIsBasedOn()));
+      FolderServerTemplateExtract resourceExtract =
+          (FolderServerTemplateExtract) folderSession.findResourceExtractById(instanceReport.getIsBasedOn());
+      if (resourceExtract != null) {
+        boolean hasReadAccess = permissionServiceSession.userHasReadAccessToResource(resourceExtract.getId());
+        if (hasReadAccess) {
+          instanceReport.setIsBasedOnExtract(resourceExtract);
+        } else {
+          instanceReport.setIsBasedOnExtract(FolderServerNodeExtract.anonymous(resourceExtract));
+        }
+      }
     }
   }
 
   private void decorateResourceWithDerivedFrom(FolderServiceSession folderSession,
                                                PermissionServiceSession permissionServiceSession,
                                                FolderServerResourceReport resourceReport) {
-    if (resourceReport.getDerivedFrom() != null) {
+    if (resourceReport.getDerivedFrom() != null && resourceReport.getDerivedFrom().getValue() != null) {
       FolderServerResourceExtract resourceExtract =
           folderSession.findResourceExtractById(resourceReport.getDerivedFrom());
-      boolean hasReadAccess = permissionServiceSession.userHasReadAccessToResource(resourceExtract.getId());
       if (resourceExtract != null) {
+        boolean hasReadAccess = permissionServiceSession.userHasReadAccessToResource(resourceExtract.getId());
         if (hasReadAccess) {
           resourceReport.setDerivedFromExtract(resourceExtract);
         } else {
