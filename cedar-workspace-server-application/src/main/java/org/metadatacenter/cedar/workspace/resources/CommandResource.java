@@ -12,6 +12,7 @@ import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.FolderOrResource;
 import org.metadatacenter.model.ResourceVersion;
 import org.metadatacenter.model.folderserver.FolderServerFolder;
+import org.metadatacenter.model.folderserver.FolderServerInstance;
 import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
@@ -235,17 +236,30 @@ public class CommandResource extends AbstractFolderServerResource {
     } else {
       // Later we will guarantee some kind of uniqueness for the resource names
       // Currently we allow duplicate names, the id is the PK
-      FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
-      brandNewResource.setId(id);
-      brandNewResource.setType(nodeType);
-      brandNewResource.setName(name.stringValue());
-      brandNewResource.setDescription(descriptionV);
-      brandNewResource.setVersion(version.getValue());
-      brandNewResource.setPublicationStatus(publicationStatus.getValue());
-      if (nodeType.isVersioned()) {
-        brandNewResource.setLatestVersion(true);
+      FolderServerResource oldResource = folderSession.findResourceById(oldId);
+      if (oldResource == null) {
+        return CedarResponse.notFound()
+            .parameter("id", id)
+            .parameter("resourceType", nodeTypeString)
+            .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
+            .errorMessage("The source resource was not found!")
+            .build();
+      } else {
+        FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
+        brandNewResource.setId(id);
+        brandNewResource.setType(nodeType);
+        brandNewResource.setName(name.stringValue());
+        brandNewResource.setDescription(descriptionV);
+        brandNewResource.setVersion(version.getValue());
+        brandNewResource.setPublicationStatus(publicationStatus.getValue());
+        if (nodeType.isVersioned()) {
+          brandNewResource.setLatestVersion(true);
+        }
+        if (nodeType == CedarNodeType.INSTANCE) {
+          ((FolderServerInstance) brandNewResource).setIsBasedOn(((FolderServerInstance) oldResource).getIsBasedOn().getValue());
+        }
+        newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
       }
-      newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
     }
 
     if (newResource != null) {
