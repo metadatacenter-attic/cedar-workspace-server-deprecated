@@ -3,7 +3,6 @@ package org.metadatacenter.cedar.workspace.resources;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.apache.commons.collections.map.HashedMap;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
@@ -96,7 +95,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
     String nodeTypeString = nodeTypeP.stringValue();
 
     CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
-    if (!CedarNodeTypeUtil.isValidForRestCall(nodeType)) {
+    if (CedarNodeTypeUtil.isNotValidForRestCall(nodeType)) {
       return CedarResponse.badRequest()
           .errorMessage("You passed an illegal nodeType:'" + nodeTypeString +
               "'. The allowed values are:" + CedarNodeTypeUtil.getValidNodeTypesForRestCalls())
@@ -128,9 +127,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     String isBasedOnString = isBasedOnP.stringValue();
 
-    String descriptionV = null;
     CedarParameter description = c.request().getRequestBody().get("description");
-    descriptionV = description.stringValue();
 
     // check existence of parent folder
     FolderServerResource newResource = null;
@@ -146,13 +143,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
     } else {
       // Later we will guarantee some kind of uniqueness for the resource names
       // Currently we allow duplicate names, the id is the PK
-      FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
-      brandNewResource.setId(id);
-      brandNewResource.setType(nodeType);
-      brandNewResource.setName(name.stringValue());
-      brandNewResource.setDescription(descriptionV);
-      brandNewResource.setVersion(versionString);
-      brandNewResource.setPublicationStatus(publicationStatusString);
+      FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, id,
+          name.stringValue(), description.stringValue(), version, publicationStatus);
       if (nodeType.isVersioned()) {
         brandNewResource.setLatestVersion(true);
       }
@@ -317,7 +309,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
       boolean deleted = folderSession.deleteResourceById(id, CedarNodeType.ELEMENT);
       if (deleted) {
         if (previousVersion != null) {
-          // TODO: this is a system level call, maybe should be executed with such a session?
           folderSession.setLatestVersion(previousVersion.getValue());
         }
         return Response.noContent().build();
@@ -474,13 +465,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     //FolderServerResourceReport resourceReport = FolderServerResourceReport.fromResource(resource);
 
-    if (resource.getType() == CedarNodeType.FIELD) {
-      //decorateResourceWithVersionHistory(c, folderSession, resourceReport);
-    } else if (resource.getType() == CedarNodeType.ELEMENT) {
-      //decorateResourceWithVersionHistory(c, folderSession, resourceReport);
-    } else if (resource.getType() == CedarNodeType.TEMPLATE) {
-      //decorateResourceWithVersionHistory(c, folderSession, resourceReport);
-    } else {
+    if (!resource.getType().isVersioned()) {
       return CedarResponse.badRequest()
           .errorKey(CedarErrorKey.INVALID_DATA)
           .errorMessage("Invalid resource type")
@@ -499,14 +484,15 @@ public class ResourcesResource extends AbstractFolderServerResource {
   private void decorateResourceWithVersionHistory(CedarRequestContext c, FolderServiceSession folderSession,
                                                   FolderServerResourceReport resourceReport) {
     List<FolderServerResourceExtract> allVersions = folderSession.getVersionHistory(resourceReport.getId());
-    List<FolderServerResourceExtract> allVersionsWithPermission = folderSession.getVersionHistoryWithPermission(resourceReport.getId());
+    List<FolderServerResourceExtract> allVersionsWithPermission =
+        folderSession.getVersionHistoryWithPermission(resourceReport.getId());
     Map<String, FolderServerResourceExtract> accessibleMap = new HashMap<>();
-    for(FolderServerResourceExtract e : allVersionsWithPermission) {
+    for (FolderServerResourceExtract e : allVersionsWithPermission) {
       accessibleMap.put(e.getId(), e);
     }
 
     List<FolderServerResourceExtract> visibleVersions = new ArrayList<>();
-    for(FolderServerResourceExtract v : allVersions) {
+    for (FolderServerResourceExtract v : allVersions) {
       if (accessibleMap.containsKey(v.getId())) {
         visibleVersions.add(v);
       } else {
