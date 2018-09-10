@@ -21,7 +21,6 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
-import org.metadatacenter.server.neo4j.NodeLabel;
 import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
@@ -117,16 +116,10 @@ public class CommandResource extends AbstractFolderServerResource {
     //TODO: Must have write access
     FolderServerResource sourceResource = folderSession.findResourceById(oldId);
 
-    NodeLabel label = NodeLabel.forCedarNodeType(nodeType);
     ResourceVersion version = ResourceVersion.forValue(versionString);
     BiboStatus status = BiboStatus.forValue(publicationStatusString);
-    FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
-    brandNewResource.setId(newId);
-    brandNewResource.setType(nodeType);
-    brandNewResource.setName(sourceResource.getName());
-    brandNewResource.setDescription(sourceResource.getDescription());
-    brandNewResource.setVersion(versionString);
-    brandNewResource.setPublicationStatus(publicationStatusString);
+    FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, newId,
+        sourceResource.getName(), sourceResource.getDescription(), version, status);
     if (nodeType.isVersioned()) {
       brandNewResource.setPreviousVersion(oldId);
       brandNewResource.setLatestVersion(true);
@@ -157,10 +150,6 @@ public class CommandResource extends AbstractFolderServerResource {
         }
 
       }
-      // TODO: !!!!!
-      // TODO: Create a builder helper for Folders, nodes, resources. Make that work with strong types, as the list
-      // TODO: of params before
-      // TODO: What about the node labels? There was a method which collected those
     }
 
     // TODO: maybe this should not be CREATED.
@@ -201,11 +190,10 @@ public class CommandResource extends AbstractFolderServerResource {
     CedarParameter nodeTypeP = c.request().getRequestBody().get("nodeType");
     c.must(nodeTypeP).be(NonEmpty);
 
-
     String nodeTypeString = nodeTypeP.stringValue();
 
     CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
-    if (!CedarNodeTypeUtil.isValidForRestCall(nodeType)) {
+    if (CedarNodeTypeUtil.isNotValidForRestCall(nodeType)) {
       return CedarResponse.badRequest()
           .errorMessage("You passed an illegal nodeType:'" + nodeTypeString +
               "'. The allowed values are:" + CedarNodeTypeUtil.getValidNodeTypesForRestCalls())
@@ -215,9 +203,7 @@ public class CommandResource extends AbstractFolderServerResource {
           .build();
     }
 
-    String descriptionV = null;
     CedarParameter description = c.request().getRequestBody().get("description");
-    descriptionV = description.stringValue();
 
     ResourceVersion version = ResourceVersion.ZERO_ZERO_ONE;
     BiboStatus publicationStatus = BiboStatus.DRAFT;
@@ -245,13 +231,8 @@ public class CommandResource extends AbstractFolderServerResource {
             .errorMessage("The source resource was not found!")
             .build();
       } else {
-        FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType);
-        brandNewResource.setId(id);
-        brandNewResource.setType(nodeType);
-        brandNewResource.setName(name.stringValue());
-        brandNewResource.setDescription(descriptionV);
-        brandNewResource.setVersion(version.getValue());
-        brandNewResource.setPublicationStatus(publicationStatus.getValue());
+        FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, id,
+            name.stringValue(), description.stringValue(), version, publicationStatus);
         if (nodeType.isVersioned()) {
           brandNewResource.setLatestVersion(true);
         }
