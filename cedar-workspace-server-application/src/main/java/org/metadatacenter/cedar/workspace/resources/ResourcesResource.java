@@ -129,6 +129,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     CedarParameter description = c.request().getRequestBody().get("description");
 
+    CedarParameter identifier = c.request().getRequestBody().get("identifier");
+
     // check existence of parent folder
     FolderServerResource newResource = null;
     FolderServerFolder parentFolder = folderSession.findFolderById(parentId);
@@ -144,7 +146,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
       // Later we will guarantee some kind of uniqueness for the resource names
       // Currently we allow duplicate names, the id is the PK
       FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, id,
-          name.stringValue(), description.stringValue(), version, publicationStatus);
+          name.stringValue(), description.stringValue(), identifier.stringValue(), version, publicationStatus);
       if (nodeType.isVersioned()) {
         brandNewResource.setLatestVersion(true);
       }
@@ -219,6 +221,13 @@ public class ResourcesResource extends AbstractFolderServerResource {
       descriptionV = descriptionV.trim();
     }
 
+    CedarParameter identifier = c.request().getRequestBody().get("identifier");
+    String identifierV = null;
+    if (!identifier.isEmpty()) {
+      identifierV = identifier.stringValue();
+      identifierV = identifierV.trim();
+    }
+
     CedarParameter newVersionParam = c.request().getRequestBody().get("version");
     ResourceVersion newVersion = null;
     if (!newVersionParam.isEmpty()) {
@@ -268,6 +277,9 @@ public class ResourcesResource extends AbstractFolderServerResource {
       }
       if (name != null && !name.isEmpty()) {
         updateFields.put(NodeProperty.NAME, nameV);
+      }
+      if (identifier != null && !identifier.isEmpty()) {
+        updateFields.put(NodeProperty.IDENTIFIER, identifierV);
       }
       if (newVersion != null && newVersion.isValid()) {
         updateFields.put(NodeProperty.VERSION, newVersion.getValue());
