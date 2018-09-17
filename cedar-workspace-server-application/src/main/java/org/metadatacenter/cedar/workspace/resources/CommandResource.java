@@ -119,7 +119,7 @@ public class CommandResource extends AbstractFolderServerResource {
     ResourceVersion version = ResourceVersion.forValue(versionString);
     BiboStatus status = BiboStatus.forValue(publicationStatusString);
     FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, newId,
-        sourceResource.getName(), sourceResource.getDescription(), version, status);
+        sourceResource.getName(), sourceResource.getDescription(), sourceResource.getIdentifier(), version, status);
     if (nodeType.isVersioned()) {
       brandNewResource.setPreviousVersion(oldId);
       brandNewResource.setLatestVersion(true);
@@ -205,6 +205,8 @@ public class CommandResource extends AbstractFolderServerResource {
 
     CedarParameter description = c.request().getRequestBody().get("description");
 
+    CedarParameter identifier = c.request().getRequestBody().get("identifier");
+
     ResourceVersion version = ResourceVersion.ZERO_ZERO_ONE;
     BiboStatus publicationStatus = BiboStatus.DRAFT;
 
@@ -232,7 +234,7 @@ public class CommandResource extends AbstractFolderServerResource {
             .build();
       } else {
         FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, id,
-            name.stringValue(), description.stringValue(), version, publicationStatus);
+            name.stringValue(), description.stringValue(), identifier.stringValue(), version, publicationStatus);
         if (nodeType.isVersioned()) {
           brandNewResource.setLatestVersion(true);
         }
