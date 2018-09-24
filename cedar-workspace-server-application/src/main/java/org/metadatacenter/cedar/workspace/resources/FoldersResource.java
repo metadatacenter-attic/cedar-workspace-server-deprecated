@@ -197,11 +197,11 @@ public class FoldersResource extends AbstractFolderServerResource {
         folder.addCurrentUserPermission(NodePermission.WRITE);
       }
       if (permissionSession.userCanChangeOwnerOfFolder(id)) {
-        folder.addCurrentUserPermission(NodePermission.CHANGEOWNER);
+        folder.addCurrentUserPermission(NodePermission.CHANGE_OWNER);
       }
       if (!folder.isRoot() && !folder.isSystem() && !folder.isUserHome()
           && permissionSession.userHasWriteAccessToFolder(id)) {
-        folder.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
+        folder.addCurrentUserPermission(NodePermission.CHANGE_PERMISSIONS);
       }
 
       List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(folder);
