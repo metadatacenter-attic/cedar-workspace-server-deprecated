@@ -95,12 +95,14 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(folder);
 
-    return findFolderContents(folderSession, folder, absoluteURI.toString(), pathInfo, pagedSortedTypedQuery);
+    return findFolderContents(c, folderSession, folder, absoluteURI.toString(), pathInfo, pagedSortedTypedQuery);
   }
 
 
-  private Response findFolderContents(FolderServiceSession folderSession, FolderServerFolder folder, String
-      absoluteUrl, List<FolderServerNodeExtract> pathInfo, PagedSortedTypedQuery pagedSortedTypedQuery) {
+  private Response findFolderContents(CedarRequestContext c, FolderServiceSession folderSession,
+                                      FolderServerFolder folder, String absoluteUrl,
+                                      List<FolderServerNodeExtract> pathInfo,
+                                      PagedSortedTypedQuery pagedSortedTypedQuery) {
 
     int limit = pagedSortedTypedQuery.getLimit();
     int offset = pagedSortedTypedQuery.getOffset();
@@ -124,6 +126,10 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     List<FolderServerNodeExtract> resources = folderSession.findFolderContentsExtractFiltered(folder.getId(),
         nodeTypeList, version, publicationStatus, limit, offset, sortList);
+
+    for (FolderServerNodeExtract ne : resources) {
+      decorateNodeWithCurrentUserPermissions(c, ne);
+    }
 
     long total = folderSession.findFolderContentsFilteredCount(folder.getId(), nodeTypeList, version,
         publicationStatus);

@@ -23,7 +23,6 @@ import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.CedarPermission;
-import org.metadatacenter.server.security.model.auth.NodePermission;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
 import org.metadatacenter.util.json.JsonMapper;
@@ -179,7 +178,6 @@ public class FoldersResource extends AbstractFolderServerResource {
     c.must(c.user()).have(CedarPermission.FOLDER_READ);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
 
     FolderServerFolder folder = folderSession.findFolderById(id);
     if (folder == null) {
@@ -190,19 +188,8 @@ public class FoldersResource extends AbstractFolderServerResource {
           .build();
     } else {
       folderSession.addPathAndParentId(folder);
-      if (permissionSession.userHasReadAccessToFolder(id)) {
-        folder.addCurrentUserPermission(NodePermission.READ);
-      }
-      if (permissionSession.userHasWriteAccessToFolder(id)) {
-        folder.addCurrentUserPermission(NodePermission.WRITE);
-      }
-      if (permissionSession.userCanChangeOwnerOfFolder(id)) {
-        folder.addCurrentUserPermission(NodePermission.CHANGEOWNER);
-      }
-      if (!folder.isRoot() && !folder.isSystem() && !folder.isUserHome()
-          && permissionSession.userHasWriteAccessToFolder(id)) {
-        folder.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
-      }
+
+      decorateFolderWithCurrentUserPermissions(c, folder);
 
       List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(folder);
       folder.setPathInfo(pathInfo);
