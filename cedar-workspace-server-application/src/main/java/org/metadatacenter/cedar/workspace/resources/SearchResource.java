@@ -47,15 +47,15 @@ public class SearchResource extends AbstractFolderServerResource {
   @Timed
   @Path("/search")
   public Response search(@QueryParam(QP_Q) Optional<String> q,
-                               @QueryParam(QP_ID) Optional<String> id,
-                               @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
-                               @QueryParam(QP_VERSION) Optional<String> versionParam,
-                               @QueryParam(QP_PUBLICATION_STATUS) Optional<String> publicationStatusParam,
-                               @QueryParam(QP_IS_BASED_ON) Optional<String> isBasedOn,
-                               @QueryParam(QP_SORT) Optional<String> sortParam,
-                               @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
-                               @QueryParam(QP_OFFSET) Optional<Integer> offsetParam,
-                               @QueryParam(QP_SHARING) Optional<String> sharing) throws CedarException {
+                         @QueryParam(QP_ID) Optional<String> id,
+                         @QueryParam(QP_RESOURCE_TYPES) Optional<String> resourceTypes,
+                         @QueryParam(QP_VERSION) Optional<String> versionParam,
+                         @QueryParam(QP_PUBLICATION_STATUS) Optional<String> publicationStatusParam,
+                         @QueryParam(QP_IS_BASED_ON) Optional<String> isBasedOn,
+                         @QueryParam(QP_SORT) Optional<String> sortParam,
+                         @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
+                         @QueryParam(QP_OFFSET) Optional<Integer> offsetParam,
+                         @QueryParam(QP_SHARING) Optional<String> sharing) throws CedarException {
 
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
     c.must(c.user()).be(LoggedIn);
@@ -110,6 +110,9 @@ public class SearchResource extends AbstractFolderServerResource {
     } else if (nlqt == NodeListQueryType.VIEW_ALL) {
       resources = folderSession.viewAll(nodeTypeList, version, publicationStatus, limit, offset, sortList);
       total = folderSession.viewAllCount(nodeTypeList, version, publicationStatus);
+    } else if (nlqt == NodeListQueryType.SEARCH_IS_BASED_ON) {
+      resources = folderSession.searchIsBasedOn(nodeTypeList, req.getIsBasedOn(), limit, offset, sortList);
+      total = folderSession.searchIsBasedOnCount(nodeTypeList, req.getIsBasedOn());
     } else if (nlqt == NodeListQueryType.SEARCH_ID) {
       resources = new ArrayList<>();
       FolderServerResource resourceById = folderSession.findResourceById(idString);
