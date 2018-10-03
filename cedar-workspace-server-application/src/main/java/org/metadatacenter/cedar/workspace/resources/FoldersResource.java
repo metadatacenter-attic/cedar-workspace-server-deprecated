@@ -10,9 +10,11 @@ import org.metadatacenter.error.CedarErrorReasonKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.FolderOrResource;
-import org.metadatacenter.model.folderserver.FolderServerFolder;
-import org.metadatacenter.model.folderserver.FolderServerNode;
-import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
+import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
+import org.metadatacenter.model.folderserver.basic.FolderServerNode;
+import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerFolderCurrentUserReport;
+import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerNodeCurrentUserReport;
+import org.metadatacenter.model.folderserver.extract.FolderServerNodeExtract;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
@@ -188,8 +190,6 @@ public class FoldersResource extends AbstractFolderServerResource {
           .build();
     } else {
       folderSession.addPathAndParentId(folder);
-
-      decorateFolderWithCurrentUserPermissions(c, folder);
 
       List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(folder);
       folder.setPathInfo(pathInfo);
@@ -388,4 +388,36 @@ public class FoldersResource extends AbstractFolderServerResource {
       return Response.ok().entity(permissions).build();
     }
   }
+
+  @GET
+  @Timed
+  @Path("/{id}/current-user-report")
+  public Response getReport(@PathParam(PP_ID) String folderId) throws CedarException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    c.must(c.user()).be(LoggedIn);
+
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+
+    FolderServerFolder folder = folderSession.findFolderById(folderId);
+    if (folder == null) {
+      return CedarResponse.notFound()
+          .id(folderId)
+          .errorKey(CedarErrorKey.FOLDER_NOT_FOUND)
+          .errorMessage("The folder can not be found by id")
+          .build();
+    }
+
+    folderSession.addPathAndParentId(folder);
+
+    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(folder);
+    folder.setPathInfo(pathInfo);
+
+    FolderServerFolderCurrentUserReport folderReport =
+        (FolderServerFolderCurrentUserReport) FolderServerNodeCurrentUserReport.fromNode(folder);
+
+    decorateFolderWithCurrentUserPermissions(c, folderReport);
+
+    return Response.ok().entity(folderReport).build();
+  }
+
 }

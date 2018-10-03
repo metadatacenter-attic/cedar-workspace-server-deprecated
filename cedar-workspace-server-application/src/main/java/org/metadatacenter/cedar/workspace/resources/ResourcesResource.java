@@ -9,16 +9,18 @@ import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.*;
-import org.metadatacenter.model.folderserver.FolderServerFolder;
-import org.metadatacenter.model.folderserver.FolderServerInstance;
-import org.metadatacenter.model.folderserver.FolderServerResource;
 import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
-import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
-import org.metadatacenter.model.folderserverextract.FolderServerResourceExtract;
-import org.metadatacenter.model.folderserverextract.FolderServerTemplateExtract;
-import org.metadatacenter.model.folderserverreport.FolderServerInstanceReport;
-import org.metadatacenter.model.folderserverreport.FolderServerResourceReport;
-import org.metadatacenter.model.folderserverreport.FolderServerTemplateReport;
+import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
+import org.metadatacenter.model.folderserver.basic.FolderServerInstance;
+import org.metadatacenter.model.folderserver.basic.FolderServerResource;
+import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerNodeCurrentUserReport;
+import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerResourceCurrentUserReport;
+import org.metadatacenter.model.folderserver.extract.FolderServerNodeExtract;
+import org.metadatacenter.model.folderserver.extract.FolderServerResourceExtract;
+import org.metadatacenter.model.folderserver.extract.FolderServerTemplateExtract;
+import org.metadatacenter.model.folderserver.report.FolderServerInstanceReport;
+import org.metadatacenter.model.folderserver.report.FolderServerResourceReport;
+import org.metadatacenter.model.folderserver.report.FolderServerTemplateReport;
 import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
@@ -189,8 +191,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     }
 
     folderSession.addPathAndParentId(resource);
-
-    decorateResourceWithCurrentUserPermissions(c, resource);
 
     List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
     resource.setPathInfo(pathInfo);
@@ -400,6 +400,39 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
   @GET
   @Timed
+  @Path("/{id}/current-user-report")
+  public Response getCurrentUserReport(@PathParam(PP_ID) String id) throws CedarException {
+    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    c.must(c.user()).be(LoggedIn);
+
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+
+    PermissionServiceSession permissionServiceSession = CedarDataServices.getPermissionServiceSession(c);
+
+    FolderServerResource resource = folderSession.findResourceById(id);
+    if (resource == null) {
+      return CedarResponse.notFound()
+          .id(id)
+          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
+          .errorMessage("The resource can not be found by id")
+          .build();
+    }
+
+    folderSession.addPathAndParentId(resource);
+
+    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
+    resource.setPathInfo(pathInfo);
+
+    FolderServerResourceCurrentUserReport resourceReport =
+        (FolderServerResourceCurrentUserReport) FolderServerNodeCurrentUserReport.fromNode(resource);
+
+    decorateResourceWithCurrentUserPermissions(c, resourceReport);
+
+    return Response.ok().entity(resourceReport).build();
+  }
+
+  @GET
+  @Timed
   @Path("/{id}/report")
   public Response getReport(@PathParam(PP_ID) String id) throws CedarException {
     CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
@@ -420,14 +453,13 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     folderSession.addPathAndParentId(resource);
 
-    decorateResourceWithCurrentUserPermissions(c, resource);
-
     List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
     resource.setPathInfo(pathInfo);
 
     FolderServerResourceReport resourceReport = FolderServerResourceReport.fromResource(resource);
 
     decorateResourceWithDerivedFrom(folderSession, permissionServiceSession, resourceReport);
+    decorateResourceWithCurrentUserPermissions(c, resourceReport);
 
     if (resource.getType() == CedarNodeType.INSTANCE) {
       decorateResourceWithIsBasedOn(folderSession, permissionServiceSession,
