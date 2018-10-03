@@ -27,12 +27,10 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
-import org.metadatacenter.server.VersionServiceSession;
 import org.metadatacenter.server.neo4j.cypher.NodeProperty;
 import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
-import org.metadatacenter.server.security.model.auth.NodePermission;
 import org.metadatacenter.util.CedarNodeTypeUtil;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
@@ -190,7 +188,12 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     }
 
-    decorateResourceWithCurrentUserPermissions(c, folderSession, resource);
+    folderSession.addPathAndParentId(resource);
+
+    decorateResourceWithCurrentUserPermissions(c, resource);
+
+    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
+    resource.setPathInfo(pathInfo);
 
     return Response.ok().entity(resource).build();
 
@@ -415,7 +418,12 @@ public class ResourcesResource extends AbstractFolderServerResource {
           .build();
     }
 
-    decorateResourceWithCurrentUserPermissions(c, folderSession, resource);
+    folderSession.addPathAndParentId(resource);
+
+    decorateResourceWithCurrentUserPermissions(c, resource);
+
+    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
+    resource.setPathInfo(pathInfo);
 
     FolderServerResourceReport resourceReport = FolderServerResourceReport.fromResource(resource);
 
@@ -547,38 +555,5 @@ public class ResourcesResource extends AbstractFolderServerResource {
       }
     }
   }
-
-
-  private void decorateResourceWithCurrentUserPermissions(CedarRequestContext c, FolderServiceSession folderSession,
-                                                          FolderServerResource resource) {
-    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
-    VersionServiceSession versionSession = CedarDataServices.getVersionServiceSession(c);
-    folderSession.addPathAndParentId(resource);
-    String id = resource.getId();
-    if (permissionSession.userHasReadAccessToResource(id)) {
-      resource.addCurrentUserPermission(NodePermission.READ);
-    }
-    if (permissionSession.userHasWriteAccessToResource(id)) {
-      resource.addCurrentUserPermission(NodePermission.WRITE);
-    }
-    if (permissionSession.userCanChangeOwnerOfResource(id)) {
-      resource.addCurrentUserPermission(NodePermission.CHANGEOWNER);
-    }
-    if (permissionSession.userHasWriteAccessToResource(id)) {
-      resource.addCurrentUserPermission(NodePermission.CHANGEPERMISSIONS);
-    }
-    if (versionSession.userCanPerformVersioning(resource)) {
-      if (versionSession.resourceCanBePublished(resource)) {
-        resource.addCurrentUserPermission(NodePermission.PUBLISH);
-      }
-      if (versionSession.resourceCanBeDrafted(resource)) {
-        resource.addCurrentUserPermission(NodePermission.CREATE_DRAFT);
-      }
-    }
-
-    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
-    resource.setPathInfo(pathInfo);
-  }
-
 
 }
