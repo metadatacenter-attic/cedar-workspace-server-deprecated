@@ -7,8 +7,8 @@ import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.exception.CedarProcessingException;
 import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.folderserver.FolderServerFolder;
-import org.metadatacenter.model.folderserverextract.FolderServerNodeExtract;
+import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
+import org.metadatacenter.model.folderserver.extract.FolderServerNodeExtract;
 import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
@@ -126,10 +126,6 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     List<FolderServerNodeExtract> resources = folderSession.findFolderContentsExtractFiltered(folder.getId(),
         nodeTypeList, version, publicationStatus, limit, offset, sortList);
-
-    for (FolderServerNodeExtract ne : resources) {
-      decorateNodeWithCurrentUserPermissions(c, ne);
-    }
 
     long total = folderSession.findFolderContentsFilteredCount(folder.getId(), nodeTypeList, version,
         publicationStatus);
