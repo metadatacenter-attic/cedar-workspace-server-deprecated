@@ -41,9 +41,7 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
 
   @Override
   public void runApp(WorkspaceServerConfiguration configuration, Environment environment) {
-    final IndexResource index = new IndexResource();
-    environment.jersey().register(index);
-
+    environment.jersey().register(new IndexResource());
     environment.jersey().register(new CommandResource(cedarConfig));
     environment.jersey().register(new FolderContentsResource(cedarConfig));
     environment.jersey().register(new FoldersResource(cedarConfig));
