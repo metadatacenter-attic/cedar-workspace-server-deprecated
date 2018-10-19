@@ -9,7 +9,6 @@ import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.util.http.LinkHeaderUtil;
 import org.metadatacenter.util.http.PagedSortedQuery;
@@ -41,7 +40,7 @@ public class NodesResource extends AbstractFolderServerResource {
   public Response findAllNodes(@QueryParam(QP_SORT) Optional<String> sortParam,
                                @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
                                @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
 

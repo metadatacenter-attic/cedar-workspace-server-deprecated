@@ -13,7 +13,6 @@ import org.metadatacenter.model.request.NodeListQueryType;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.security.model.user.ResourcePublicationStatusFilter;
 import org.metadatacenter.server.security.model.user.ResourceVersionFilter;
@@ -53,7 +52,7 @@ public class FolderContentsResource extends AbstractFolderServerResource {
                                          @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
                                          @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws
       CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     if (id != null) {
