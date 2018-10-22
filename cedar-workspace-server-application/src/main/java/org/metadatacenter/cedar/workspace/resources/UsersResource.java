@@ -7,7 +7,6 @@ import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.folderserver.basic.FolderServerUser;
 import org.metadatacenter.model.response.FolderServerUserListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.UserServiceSession;
 
 import javax.ws.rs.GET;
@@ -30,7 +29,7 @@ public class UsersResource extends AbstractFolderServerResource {
   @GET
   @Timed
   public Response findUsers() throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
 

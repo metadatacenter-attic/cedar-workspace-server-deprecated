@@ -11,14 +11,13 @@ import org.metadatacenter.model.BiboStatus;
 import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.FolderOrResource;
 import org.metadatacenter.model.ResourceVersion;
+import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
 import org.metadatacenter.model.folderserver.basic.FolderServerInstance;
 import org.metadatacenter.model.folderserver.basic.FolderServerResource;
-import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.assertion.noun.CedarRequestBody;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.result.BackendCallResult;
@@ -52,7 +51,7 @@ public class CommandResource extends AbstractFolderServerResource {
   @Timed
   @Path("/move-node-to-folder")
   public Response moveNodeToFolder() throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
 
@@ -94,7 +93,7 @@ public class CommandResource extends AbstractFolderServerResource {
   @Timed
   @Path("/create-draft-resource")
   public Response createDraftResource() throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
 
@@ -164,7 +163,7 @@ public class CommandResource extends AbstractFolderServerResource {
   @Timed
   @Path("/copy-resource-to-folder")
   public Response copyResourceToFolder() throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
 
@@ -239,7 +238,8 @@ public class CommandResource extends AbstractFolderServerResource {
           brandNewResource.setLatestVersion(true);
         }
         if (nodeType == CedarNodeType.INSTANCE) {
-          ((FolderServerInstance) brandNewResource).setIsBasedOn(((FolderServerInstance) oldResource).getIsBasedOn().getValue());
+          ((FolderServerInstance) brandNewResource)
+              .setIsBasedOn(((FolderServerInstance) oldResource).getIsBasedOn().getValue());
         }
         newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
       }

@@ -14,7 +14,6 @@ import org.metadatacenter.model.request.NodeListQueryTypeDetector;
 import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.security.model.user.ResourcePublicationStatusFilter;
 import org.metadatacenter.server.security.model.user.ResourceVersionFilter;
@@ -57,7 +56,7 @@ public class SearchResource extends AbstractFolderServerResource {
                          @QueryParam(QP_OFFSET) Optional<Integer> offsetParam,
                          @QueryParam(QP_SHARING) Optional<String> sharing) throws CedarException {
 
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     PagedSortedTypedSearchQuery pagedSearchQuery = new PagedSortedTypedSearchQuery(

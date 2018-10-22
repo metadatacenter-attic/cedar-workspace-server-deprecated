@@ -26,7 +26,6 @@ import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
-import org.metadatacenter.rest.context.CedarRequestContextFactory;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.cypher.NodeProperty;
@@ -70,7 +69,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   public Response createResource() throws CedarException {
     //TODO: use constants here, instead of strings. Also replace in ResourceServer code
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
 
     c.must(c.user()).be(LoggedIn);
 
@@ -176,7 +175,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   @Path("/{id}")
   public Response findResource(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
@@ -203,7 +202,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   @Path("/{id}")
   public Response updateResource(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     c.must(c.request().getRequestBody()).be(NonEmpty);
@@ -303,7 +302,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   @Path("/{id}")
   public Response deleteResource(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
@@ -341,7 +340,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   @Path("/{id}/permissions")
   public Response getPermissions(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
@@ -364,7 +363,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   @Path("/{id}/permissions")
   public Response updatePermissions(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     c.must(c.request().getRequestBody()).be(NonEmpty);
@@ -402,7 +401,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   @Path("/{id}/current-user-report")
   public Response getCurrentUserReport(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
@@ -435,7 +434,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   @Path("/{id}/report")
   public Response getReport(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
@@ -486,7 +485,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
   @Timed
   @Path("/{id}/versions")
   public Response getVersions(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = CedarRequestContextFactory.fromRequest(request);
+    CedarRequestContext c = buildRequestContext();
     c.must(c.user()).be(LoggedIn);
 
     FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
