@@ -148,6 +148,12 @@ public class ResourcesResource extends AbstractFolderServerResource {
           name.stringValue(), description.stringValue(), identifier.stringValue(), version, publicationStatus);
       if (nodeType.isVersioned()) {
         brandNewResource.setLatestVersion(true);
+        //TODO:VERSIONHERE
+        if (publicationStatus == BiboStatus.DRAFT) {
+          brandNewResource.setLatestDraftVersion(true);
+        } else if (publicationStatus == BiboStatus.PUBLISHED) {
+          brandNewResource.setLatestPublishedVersion(true);
+        }
       }
       if (CedarNodeType.INSTANCE.getValue().equals(nodeType.getValue())) {
         FolderServerInstance brandNewInstance = (FolderServerInstance) brandNewResource;
@@ -324,6 +330,8 @@ public class ResourcesResource extends AbstractFolderServerResource {
       if (deleted) {
         if (previousVersion != null) {
           folderSession.setLatestVersion(previousVersion.getValue());
+          //TODO:VERSIONHERE
+          folderSession.setLatestPublishedVersion(previousVersion.getValue());
         }
         return Response.noContent().build();
       } else {
