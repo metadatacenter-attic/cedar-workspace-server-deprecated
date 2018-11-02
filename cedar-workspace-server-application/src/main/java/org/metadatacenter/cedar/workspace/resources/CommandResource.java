@@ -7,11 +7,7 @@ import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.error.CedarErrorType;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.model.BiboStatus;
-import org.metadatacenter.model.CedarNodeType;
-import org.metadatacenter.model.FolderOrResource;
-import org.metadatacenter.model.ResourceVersion;
-import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
+import org.metadatacenter.model.*;
 import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
 import org.metadatacenter.model.folderserver.basic.FolderServerInstance;
 import org.metadatacenter.model.folderserver.basic.FolderServerResource;
@@ -120,13 +116,13 @@ public class CommandResource extends AbstractFolderServerResource {
 
     ResourceVersion version = ResourceVersion.forValue(versionString);
     BiboStatus status = BiboStatus.forValue(publicationStatusString);
-    FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, newId,
+    FolderServerResource brandNewResource = WorkspaceObjectBuilder.forNodeType(nodeType, newId,
         sourceResource.getName(), sourceResource.getDescription(), sourceResource.getIdentifier(), version, status);
     if (nodeType.isVersioned()) {
       brandNewResource.setPreviousVersion(oldId);
       brandNewResource.setLatestVersion(true);
-      //TODO:VERSIONHERE
       brandNewResource.setLatestDraftVersion(true);
+      brandNewResource.setLatestPublishedVersion(false);
     }
 
     folderSession.unsetLatestVersion(sourceResource.getId());
@@ -194,7 +190,6 @@ public class CommandResource extends AbstractFolderServerResource {
     folderSession.updateResourceById(id, nodeType, updates);
 
     if (nodeType.isVersioned()) {
-      //TODO:VERSIONHERE
       folderSession.setLatestVersion(id);
       folderSession.unsetLatestDraftVersion(id);
       folderSession.setLatestPublishedVersion(id);
@@ -286,16 +281,12 @@ public class CommandResource extends AbstractFolderServerResource {
             .errorMessage("The source resource was not found!")
             .build();
       } else {
-        FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, id,
+        FolderServerResource brandNewResource = WorkspaceObjectBuilder.forNodeType(nodeType, id,
             name.stringValue(), description.stringValue(), identifier.stringValue(), version, publicationStatus);
         if (nodeType.isVersioned()) {
           brandNewResource.setLatestVersion(true);
-          //TODO:VERSIONHERE
-          if (publicationStatus == BiboStatus.DRAFT) {
-            brandNewResource.setLatestDraftVersion(true);
-          } else if (publicationStatus == BiboStatus.PUBLISHED) {
-            brandNewResource.setLatestPublishedVersion(true);
-          }
+          brandNewResource.setLatestDraftVersion(publicationStatus == BiboStatus.DRAFT);
+          brandNewResource.setLatestPublishedVersion(publicationStatus == BiboStatus.PUBLISHED);
         }
         if (nodeType == CedarNodeType.INSTANCE) {
           ((FolderServerInstance) brandNewResource)

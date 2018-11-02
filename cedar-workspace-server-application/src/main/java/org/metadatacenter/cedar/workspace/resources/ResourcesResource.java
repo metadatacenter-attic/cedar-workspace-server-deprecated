@@ -9,7 +9,6 @@ import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.*;
-import org.metadatacenter.model.folderserver.FolderServerResourceBuilder;
 import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
 import org.metadatacenter.model.folderserver.basic.FolderServerInstance;
 import org.metadatacenter.model.folderserver.basic.FolderServerResource;
@@ -144,16 +143,12 @@ public class ResourcesResource extends AbstractFolderServerResource {
     } else {
       // Later we will guarantee some kind of uniqueness for the resource names
       // Currently we allow duplicate names, the id is the PK
-      FolderServerResource brandNewResource = FolderServerResourceBuilder.forNodeType(nodeType, id,
+      FolderServerResource brandNewResource = WorkspaceObjectBuilder.forNodeType(nodeType, id,
           name.stringValue(), description.stringValue(), identifier.stringValue(), version, publicationStatus);
       if (nodeType.isVersioned()) {
         brandNewResource.setLatestVersion(true);
-        //TODO:VERSIONHERE
-        if (publicationStatus == BiboStatus.DRAFT) {
-          brandNewResource.setLatestDraftVersion(true);
-        } else if (publicationStatus == BiboStatus.PUBLISHED) {
-          brandNewResource.setLatestPublishedVersion(true);
-        }
+        brandNewResource.setLatestDraftVersion(publicationStatus == BiboStatus.DRAFT);
+        brandNewResource.setLatestPublishedVersion(publicationStatus == BiboStatus.PUBLISHED);
       }
       if (CedarNodeType.INSTANCE.getValue().equals(nodeType.getValue())) {
         FolderServerInstance brandNewInstance = (FolderServerInstance) brandNewResource;
@@ -330,7 +325,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
       if (deleted) {
         if (previousVersion != null) {
           folderSession.setLatestVersion(previousVersion.getValue());
-          //TODO:VERSIONHERE
           folderSession.setLatestPublishedVersion(previousVersion.getValue());
         }
         return Response.noContent().build();
