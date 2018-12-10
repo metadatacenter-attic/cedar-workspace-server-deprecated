@@ -313,4 +313,74 @@ public class CommandResource extends AbstractFolderServerResource {
     }
   }
 
+  @POST
+  @Timed
+  @Path("/make-resource-public")
+  public Response makeResourcePublic() throws CedarException {
+    CedarRequestContext c = buildRequestContext();
+
+    c.must(c.user()).be(LoggedIn);
+
+    CedarRequestBody requestBody = c.request().getRequestBody();
+    String id = requestBody.get("id").stringValue();
+    String nodeTypeString = requestBody.get("nodeType").stringValue();
+
+    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
+
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+
+    FolderServerResource sourceResource = folderSession.findResourceById(id);
+
+    if (sourceResource != null) {
+
+      folderSession.setPublic(id);
+
+      FolderServerResource updatedResource = folderSession.findResourceById(id);
+
+      // TODO: this should not be CREATED.
+      // TODO: if yes, what should be the returned location?
+      UriBuilder builder = uriInfo.getAbsolutePathBuilder();
+      URI uri = builder.build();
+
+      return Response.created(uri).entity(updatedResource).build();
+    } else {
+      return CedarResponse.notFound().build();
+    }
+  }
+
+  @POST
+  @Timed
+  @Path("/make-resource-not-public")
+  public Response makeResourceNotPublic() throws CedarException {
+    CedarRequestContext c = buildRequestContext();
+
+    c.must(c.user()).be(LoggedIn);
+
+    CedarRequestBody requestBody = c.request().getRequestBody();
+    String id = requestBody.get("id").stringValue();
+    String nodeTypeString = requestBody.get("nodeType").stringValue();
+
+    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
+
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+
+    FolderServerResource sourceResource = folderSession.findResourceById(id);
+
+    if (sourceResource != null) {
+
+      folderSession.setNotPublic(id);
+
+      FolderServerResource updatedResource = folderSession.findResourceById(id);
+
+      // TODO: this should not be CREATED.
+      // TODO: if yes, what should be the returned location?
+      UriBuilder builder = uriInfo.getAbsolutePathBuilder();
+      URI uri = builder.build();
+
+      return Response.created(uri).entity(updatedResource).build();
+    } else {
+      return CedarResponse.notFound().build();
+    }
+  }
+
 }
