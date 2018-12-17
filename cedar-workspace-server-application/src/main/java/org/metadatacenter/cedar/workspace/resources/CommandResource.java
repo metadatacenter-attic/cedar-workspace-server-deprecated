@@ -315,7 +315,7 @@ public class CommandResource extends AbstractFolderServerResource {
 
   @POST
   @Timed
-  @Path("/make-resource-public")
+  @Path("/make-artifact-open")
   public Response makeResourcePublic() throws CedarException {
     CedarRequestContext c = buildRequestContext();
 
@@ -333,16 +333,11 @@ public class CommandResource extends AbstractFolderServerResource {
 
     if (sourceResource != null) {
 
-      folderSession.setPublic(id);
+      folderSession.setOpen(id);
 
       FolderServerResource updatedResource = folderSession.findResourceById(id);
 
-      // TODO: this should not be CREATED.
-      // TODO: if yes, what should be the returned location?
-      UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-      URI uri = builder.build();
-
-      return Response.created(uri).entity(updatedResource).build();
+      return Response.ok().entity(updatedResource).build();
     } else {
       return CedarResponse.notFound().build();
     }
@@ -350,7 +345,7 @@ public class CommandResource extends AbstractFolderServerResource {
 
   @POST
   @Timed
-  @Path("/make-resource-not-public")
+  @Path("/make-artifact-not-open")
   public Response makeResourceNotPublic() throws CedarException {
     CedarRequestContext c = buildRequestContext();
 
@@ -368,16 +363,11 @@ public class CommandResource extends AbstractFolderServerResource {
 
     if (sourceResource != null) {
 
-      folderSession.setNotPublic(id);
+      folderSession.setNotOpen(id);
 
       FolderServerResource updatedResource = folderSession.findResourceById(id);
 
-      // TODO: this should not be CREATED.
-      // TODO: if yes, what should be the returned location?
-      UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-      URI uri = builder.build();
-
-      return Response.created(uri).entity(updatedResource).build();
+      return Response.ok().entity(updatedResource).build();
     } else {
       return CedarResponse.notFound().build();
     }
