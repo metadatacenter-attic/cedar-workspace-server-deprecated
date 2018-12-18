@@ -313,4 +313,64 @@ public class CommandResource extends AbstractFolderServerResource {
     }
   }
 
+  @POST
+  @Timed
+  @Path("/make-artifact-open")
+  public Response makeResourcePublic() throws CedarException {
+    CedarRequestContext c = buildRequestContext();
+
+    c.must(c.user()).be(LoggedIn);
+
+    CedarRequestBody requestBody = c.request().getRequestBody();
+    String id = requestBody.get("id").stringValue();
+    String nodeTypeString = requestBody.get("nodeType").stringValue();
+
+    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
+
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+
+    FolderServerResource sourceResource = folderSession.findResourceById(id);
+
+    if (sourceResource != null) {
+
+      folderSession.setOpen(id);
+
+      FolderServerResource updatedResource = folderSession.findResourceById(id);
+
+      return Response.ok().entity(updatedResource).build();
+    } else {
+      return CedarResponse.notFound().build();
+    }
+  }
+
+  @POST
+  @Timed
+  @Path("/make-artifact-not-open")
+  public Response makeResourceNotPublic() throws CedarException {
+    CedarRequestContext c = buildRequestContext();
+
+    c.must(c.user()).be(LoggedIn);
+
+    CedarRequestBody requestBody = c.request().getRequestBody();
+    String id = requestBody.get("id").stringValue();
+    String nodeTypeString = requestBody.get("nodeType").stringValue();
+
+    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
+
+    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
+
+    FolderServerResource sourceResource = folderSession.findResourceById(id);
+
+    if (sourceResource != null) {
+
+      folderSession.setNotOpen(id);
+
+      FolderServerResource updatedResource = folderSession.findResourceById(id);
+
+      return Response.ok().entity(updatedResource).build();
+    } else {
+      return CedarResponse.notFound().build();
+    }
+  }
+
 }
