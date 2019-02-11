@@ -14,6 +14,7 @@ import org.metadatacenter.model.request.NodeListRequest;
 import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
+import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.security.model.user.ResourcePublicationStatusFilter;
 import org.metadatacenter.server.security.model.user.ResourceVersionFilter;
 import org.metadatacenter.util.http.CedarResponse;
@@ -84,6 +85,16 @@ public class FolderContentsResource extends AbstractFolderServerResource {
           .build();
     }
 
+    PermissionServiceSession permissionServiceSession = CedarDataServices.getPermissionServiceSession(c);
+    boolean hasRead = permissionServiceSession.userHasReadAccessToFolder(id);
+    if (!hasRead) {
+      return CedarResponse.forbidden()
+          .id(id)
+          .errorKey(CedarErrorKey.NO_READ_ACCESS_TO_FOLDER)
+          .errorMessage("You do not have read access to the folder")
+          .build();
+    }
+
     UriBuilder builder = uriInfo.getAbsolutePathBuilder();
     URI absoluteURI = builder
         .queryParam(QP_RESOURCE_TYPES, pagedSortedTypedQuery.getNodeTypesAsString())
@@ -123,10 +134,10 @@ public class FolderContentsResource extends AbstractFolderServerResource {
 
     r.setRequest(req);
 
-    List<FolderServerNodeExtract> resources = folderSession.findFolderContentsExtractFiltered(folder.getId(),
+    List<FolderServerNodeExtract> resources = folderSession.findFolderContentsExtract(folder.getId(),
         nodeTypeList, version, publicationStatus, limit, offset, sortList);
 
-    long total = folderSession.findFolderContentsFilteredCount(folder.getId(), nodeTypeList, version,
+    long total = folderSession.findFolderContentsCount(folder.getId(), nodeTypeList, version,
         publicationStatus);
 
     r.setTotalCount(total);

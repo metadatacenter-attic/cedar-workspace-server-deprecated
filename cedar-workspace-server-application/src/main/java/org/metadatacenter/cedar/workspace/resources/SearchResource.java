@@ -106,6 +106,9 @@ public class SearchResource extends AbstractFolderServerResource {
     if (nlqt == NodeListQueryType.VIEW_SHARED_WITH_ME) {
       resources = folderSession.viewSharedWithMe(nodeTypeList, version, publicationStatus, limit, offset, sortList);
       total = folderSession.viewSharedWithMeCount(nodeTypeList, version, publicationStatus);
+    } else if (nlqt == NodeListQueryType.VIEW_SHARED_WITH_EVERYBODY) {
+      resources = folderSession.viewSharedWithEverybody(nodeTypeList, version, publicationStatus, limit, offset, sortList);
+      total = folderSession.viewSharedWithEverybodyCount(nodeTypeList, version, publicationStatus);
     } else if (nlqt == NodeListQueryType.VIEW_ALL) {
       resources = folderSession.viewAll(nodeTypeList, version, publicationStatus, limit, offset, sortList);
       total = folderSession.viewAllCount(nodeTypeList, version, publicationStatus);
