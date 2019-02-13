@@ -329,29 +329,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     }
   }
 
-  @GET
-  @Timed
-  @Path("/{id}/permissions")
-  public Response getPermissions(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
-
-    FolderServerResource resource = folderSession.findResourceById(id);
-    if (resource == null) {
-      return CedarResponse.notFound()
-          .id(id)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-          .errorMessage("The resource can not be found by id")
-          .build();
-    } else {
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, FolderOrResource.RESOURCE);
-      return Response.ok().entity(permissions).build();
-    }
-  }
-
   @PUT
   @Timed
   @Path("/{id}/permissions")
@@ -385,7 +362,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
       if (backendCallResult.isError()) {
         throw new CedarBackendException(backendCallResult);
       }
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, FolderOrResource.RESOURCE);
+      CedarNodePermissions permissions = permissionSession.getNodePermissions(id);
       return Response.ok().entity(permissions).build();
     }
   }
