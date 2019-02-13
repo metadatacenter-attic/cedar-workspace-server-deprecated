@@ -15,10 +15,6 @@ import org.metadatacenter.model.folderserver.basic.FolderServerResource;
 import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerNodeCurrentUserReport;
 import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerResourceCurrentUserReport;
 import org.metadatacenter.model.folderserver.extract.FolderServerNodeExtract;
-import org.metadatacenter.model.folderserver.extract.FolderServerResourceExtract;
-import org.metadatacenter.model.request.NodeListQueryType;
-import org.metadatacenter.model.request.NodeListRequest;
-import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
@@ -425,52 +421,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     decorateResourceWithCurrentUserPermissions(c, resourceReport);
 
     return Response.ok().entity(resourceReport).build();
-  }
-
-  @GET
-  @Timed
-  @Path("/{id}/versions")
-  public Response getVersions(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    FolderServerResource resource = folderSession.findResourceById(id);
-    if (resource == null) {
-      return CedarResponse.notFound()
-          .id(id)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-          .errorMessage("The resource can not be found by id")
-          .build();
-    }
-
-    FolderServerNodeListResponse r = new FolderServerNodeListResponse();
-    NodeListRequest req = new NodeListRequest();
-    req.setId(id);
-    r.setRequest(req);
-
-    NodeListQueryType nlqt = NodeListQueryType.ALL_VERSIONS;
-    r.setNodeListQueryType(nlqt);
-
-    List<FolderServerResourceExtract> resources = folderSession.getVersionHistory(id);
-    r.setResources(resources);
-
-    r.setCurrentOffset(0);
-    r.setTotalCount(resources.size());
-    //r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
-
-    //FolderServerResourceReport resourceReport = FolderServerResourceReport.fromResource(resource);
-
-    if (!resource.getType().isVersioned()) {
-      return CedarResponse.badRequest()
-          .errorKey(CedarErrorKey.INVALID_DATA)
-          .errorMessage("Invalid resource type")
-          .parameter("nodeType", resource.getType().getValue())
-          .build();
-    }
-
-    return Response.ok().entity(r).build();
   }
 
 }
