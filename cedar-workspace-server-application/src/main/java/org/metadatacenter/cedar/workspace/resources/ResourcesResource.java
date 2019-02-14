@@ -15,14 +15,6 @@ import org.metadatacenter.model.folderserver.basic.FolderServerResource;
 import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerNodeCurrentUserReport;
 import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerResourceCurrentUserReport;
 import org.metadatacenter.model.folderserver.extract.FolderServerNodeExtract;
-import org.metadatacenter.model.folderserver.extract.FolderServerResourceExtract;
-import org.metadatacenter.model.folderserver.extract.FolderServerTemplateExtract;
-import org.metadatacenter.model.folderserver.report.FolderServerInstanceReport;
-import org.metadatacenter.model.folderserver.report.FolderServerResourceReport;
-import org.metadatacenter.model.folderserver.report.FolderServerTemplateReport;
-import org.metadatacenter.model.request.NodeListQueryType;
-import org.metadatacenter.model.request.NodeListRequest;
-import org.metadatacenter.model.response.FolderServerNodeListResponse;
 import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
@@ -43,7 +35,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -338,29 +329,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     }
   }
 
-  @GET
-  @Timed
-  @Path("/{id}/permissions")
-  public Response getPermissions(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
-
-    FolderServerResource resource = folderSession.findResourceById(id);
-    if (resource == null) {
-      return CedarResponse.notFound()
-          .id(id)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-          .errorMessage("The resource can not be found by id")
-          .build();
-    } else {
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, FolderOrResource.RESOURCE);
-      return Response.ok().entity(permissions).build();
-    }
-  }
-
   @PUT
   @Timed
   @Path("/{id}/permissions")
@@ -394,7 +362,7 @@ public class ResourcesResource extends AbstractFolderServerResource {
       if (backendCallResult.isError()) {
         throw new CedarBackendException(backendCallResult);
       }
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id, FolderOrResource.RESOURCE);
+      CedarNodePermissions permissions = permissionSession.getNodePermissions(id);
       return Response.ok().entity(permissions).build();
     }
   }
@@ -430,163 +398,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
     decorateResourceWithCurrentUserPermissions(c, resourceReport);
 
     return Response.ok().entity(resourceReport).build();
-  }
-
-  @GET
-  @Timed
-  @Path("/{id}/report")
-  public Response getReport(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    PermissionServiceSession permissionServiceSession = CedarDataServices.getPermissionServiceSession(c);
-
-    FolderServerResource resource = folderSession.findResourceById(id);
-    if (resource == null) {
-      return CedarResponse.notFound()
-          .id(id)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-          .errorMessage("The resource can not be found by id")
-          .build();
-    }
-
-    folderSession.addPathAndParentId(resource);
-
-    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
-    resource.setPathInfo(pathInfo);
-
-    FolderServerResourceReport resourceReport = FolderServerResourceReport.fromResource(resource);
-
-    decorateResourceWithDerivedFrom(folderSession, permissionServiceSession, resourceReport);
-    decorateResourceWithCurrentUserPermissions(c, resourceReport);
-
-    if (resource.getType() == CedarNodeType.INSTANCE) {
-      decorateResourceWithIsBasedOn(folderSession, permissionServiceSession,
-          (FolderServerInstanceReport) resourceReport);
-    } else if (resource.getType() == CedarNodeType.FIELD) {
-      decorateResourceWithVersionHistory(c, folderSession, resourceReport);
-    } else if (resource.getType() == CedarNodeType.ELEMENT) {
-      decorateResourceWithVersionHistory(c, folderSession, resourceReport);
-    } else if (resource.getType() == CedarNodeType.TEMPLATE) {
-      decorateResourceWithNumberOfInstances(c, folderSession, (FolderServerTemplateReport) resourceReport);
-      decorateResourceWithVersionHistory(c, folderSession, resourceReport);
-    } else {
-      return CedarResponse.badRequest()
-          .errorKey(CedarErrorKey.INVALID_DATA)
-          .errorMessage("Invalid resource type")
-          .parameter("nodeType", resource.getType().getValue())
-          .build();
-    }
-
-    return Response.ok().entity(resourceReport).build();
-  }
-
-  @GET
-  @Timed
-  @Path("/{id}/versions")
-  public Response getVersions(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    FolderServerResource resource = folderSession.findResourceById(id);
-    if (resource == null) {
-      return CedarResponse.notFound()
-          .id(id)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-          .errorMessage("The resource can not be found by id")
-          .build();
-    }
-
-    FolderServerNodeListResponse r = new FolderServerNodeListResponse();
-    NodeListRequest req = new NodeListRequest();
-    req.setId(id);
-    r.setRequest(req);
-
-    NodeListQueryType nlqt = NodeListQueryType.ALL_VERSIONS;
-    r.setNodeListQueryType(nlqt);
-
-    List<FolderServerResourceExtract> resources = folderSession.getVersionHistory(id);
-    r.setResources(resources);
-
-    r.setCurrentOffset(0);
-    r.setTotalCount(resources.size());
-    //r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteUrl, total, limit, offset));
-
-    //FolderServerResourceReport resourceReport = FolderServerResourceReport.fromResource(resource);
-
-    if (!resource.getType().isVersioned()) {
-      return CedarResponse.badRequest()
-          .errorKey(CedarErrorKey.INVALID_DATA)
-          .errorMessage("Invalid resource type")
-          .parameter("nodeType", resource.getType().getValue())
-          .build();
-    }
-
-    return Response.ok().entity(r).build();
-  }
-
-  private void decorateResourceWithNumberOfInstances(CedarRequestContext c, FolderServiceSession folderSession,
-                                                     FolderServerTemplateReport templateReport) {
-    templateReport.setNumberOfInstances(folderSession.getNumberOfInstances(templateReport.getId()));
-  }
-
-  private void decorateResourceWithVersionHistory(CedarRequestContext c, FolderServiceSession folderSession,
-                                                  FolderServerResourceReport resourceReport) {
-    List<FolderServerResourceExtract> allVersions = folderSession.getVersionHistory(resourceReport.getId());
-    List<FolderServerResourceExtract> allVersionsWithPermission =
-        folderSession.getVersionHistoryWithPermission(resourceReport.getId());
-    Map<String, FolderServerResourceExtract> accessibleMap = new HashMap<>();
-    for (FolderServerResourceExtract e : allVersionsWithPermission) {
-      accessibleMap.put(e.getId(), e);
-    }
-
-    List<FolderServerResourceExtract> visibleVersions = new ArrayList<>();
-    for (FolderServerResourceExtract v : allVersions) {
-      if (accessibleMap.containsKey(v.getId())) {
-        visibleVersions.add(v);
-      } else {
-        visibleVersions.add(FolderServerNodeExtract.anonymous(v));
-      }
-    }
-    resourceReport.setVersions(visibleVersions);
-  }
-
-  private void decorateResourceWithIsBasedOn(FolderServiceSession folderSession,
-                                             PermissionServiceSession permissionServiceSession,
-                                             FolderServerInstanceReport instanceReport) {
-    if (instanceReport.getIsBasedOn() != null) {
-      FolderServerTemplateExtract resourceExtract =
-          (FolderServerTemplateExtract) folderSession.findResourceExtractById(instanceReport.getIsBasedOn());
-      if (resourceExtract != null) {
-        boolean hasReadAccess = permissionServiceSession.userHasReadAccessToResource(resourceExtract.getId());
-        if (hasReadAccess) {
-          instanceReport.setIsBasedOnExtract(resourceExtract);
-        } else {
-          instanceReport.setIsBasedOnExtract(FolderServerNodeExtract.anonymous(resourceExtract));
-        }
-      }
-    }
-  }
-
-  private void decorateResourceWithDerivedFrom(FolderServiceSession folderSession,
-                                               PermissionServiceSession permissionServiceSession,
-                                               FolderServerResourceReport resourceReport) {
-    if (resourceReport.getDerivedFrom() != null && resourceReport.getDerivedFrom().getValue() != null) {
-      FolderServerResourceExtract resourceExtract =
-          folderSession.findResourceExtractById(resourceReport.getDerivedFrom());
-      if (resourceExtract != null) {
-        boolean hasReadAccess = permissionServiceSession.userHasReadAccessToResource(resourceExtract.getId());
-        if (hasReadAccess) {
-          resourceReport.setDerivedFromExtract(resourceExtract);
-        } else {
-          resourceReport.setDerivedFromExtract(FolderServerNodeExtract.anonymous(resourceExtract));
-        }
-      }
-    }
   }
 
 }

@@ -138,7 +138,7 @@ public class CommandResource extends AbstractFolderServerResource {
 
       if (propagateSharing) {
         PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
-        CedarNodePermissions permissions = permissionSession.getNodePermissions(oldId, FolderOrResource.RESOURCE);
+        CedarNodePermissions permissions = permissionSession.getNodePermissions(oldId);
         CedarNodePermissionsRequest permissionsRequest = permissions.toRequest();
         NodePermissionUser newOwner = new NodePermissionUser();
         newOwner.setId(c.getCedarUser().getId());

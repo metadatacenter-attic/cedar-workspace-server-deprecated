@@ -86,7 +86,7 @@ public class FolderContentsResource extends AbstractFolderServerResource {
     }
 
     PermissionServiceSession permissionServiceSession = CedarDataServices.getPermissionServiceSession(c);
-    boolean hasRead = permissionServiceSession.userHasReadAccessToFolder(id);
+    boolean hasRead = permissionServiceSession.userHasReadAccessToNode(id);
     if (!hasRead) {
       return CedarResponse.forbidden()
           .id(id)
