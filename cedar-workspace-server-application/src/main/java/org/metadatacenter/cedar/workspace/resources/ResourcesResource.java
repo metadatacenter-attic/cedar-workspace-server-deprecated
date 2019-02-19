@@ -6,11 +6,7 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.BiboStatus;
-import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.ResourceVersion;
-import org.metadatacenter.model.WorkspaceObjectBuilder;
-import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
-import org.metadatacenter.model.folderserver.basic.FolderServerInstance;
 import org.metadatacenter.model.folderserver.basic.FolderServerResource;
 import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerNodeCurrentUserReport;
 import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerResourceCurrentUserReport;
@@ -20,17 +16,13 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.cypher.NodeProperty;
-import org.metadatacenter.util.CedarNodeTypeUtil;
 import org.metadatacenter.util.http.CedarResponse;
-import org.metadatacenter.util.http.CedarUrlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,114 +41,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
   public ResourcesResource(CedarConfig cedarConfig) {
     super(cedarConfig);
-  }
-
-  @POST
-  @Timed
-  public Response createResource() throws CedarException {
-    //TODO: use constants here, instead of strings. Also replace in ResourceServer code
-    CedarRequestContext c = buildRequestContext();
-
-    c.must(c.user()).be(LoggedIn);
-
-    c.must(c.request().getRequestBody()).be(NonEmpty);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    CedarParameter parentIdP = c.request().getRequestBody().get("parentId");
-    c.must(parentIdP).be(NonEmpty);
-    String parentId = parentIdP.stringValue();
-
-    CedarParameter idP = c.request().getRequestBody().get("id");
-    c.must(idP).be(NonEmpty);
-    String id = idP.stringValue();
-
-    CedarParameter name = c.request().getRequestBody().get("name");
-    c.must(name).be(NonEmpty);
-
-    CedarParameter nodeTypeP = c.request().getRequestBody().get("nodeType");
-    c.must(nodeTypeP).be(NonEmpty);
-
-    String nodeTypeString = nodeTypeP.stringValue();
-
-    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
-    if (CedarNodeTypeUtil.isNotValidForRestCall(nodeType)) {
-      return CedarResponse.badRequest()
-          .errorMessage("You passed an illegal nodeType:'" + nodeTypeString +
-              "'. The allowed values are:" + CedarNodeTypeUtil.getValidNodeTypesForRestCalls())
-          .errorKey(CedarErrorKey.INVALID_NODE_TYPE)
-          .parameter("invalidNodeTypes", nodeTypeString)
-          .parameter("allowedNodeTypes", CedarNodeTypeUtil.getValidNodeTypeValuesForRestCalls())
-          .build();
-    }
-
-    CedarParameter versionP = c.request().getRequestBody().get("version");
-
-    CedarParameter publicationStatusP = c.request().getRequestBody().get("publicationStatus");
-
-    CedarParameter isBasedOnP = c.request().getRequestBody().get("isBasedOn");
-
-    if (nodeType.isVersioned()) {
-      c.must(versionP).be(NonEmpty);
-      c.must(publicationStatusP).be(NonEmpty);
-    }
-    if (CedarNodeType.INSTANCE.equals(nodeType.getValue())) {
-      c.must(isBasedOnP).be(NonEmpty);
-    }
-
-    String versionString = versionP.stringValue();
-    ResourceVersion version = ResourceVersion.forValue(versionString);
-
-    String publicationStatusString = publicationStatusP.stringValue();
-    BiboStatus publicationStatus = BiboStatus.forValue(publicationStatusString);
-
-    String isBasedOnString = isBasedOnP.stringValue();
-
-    CedarParameter description = c.request().getRequestBody().get("description");
-
-    CedarParameter identifier = c.request().getRequestBody().get("identifier");
-
-    // check existence of parent folder
-    FolderServerResource newResource = null;
-    FolderServerFolder parentFolder = folderSession.findFolderById(parentId);
-
-    String candidatePath = null;
-    if (parentFolder == null) {
-      return CedarResponse.badRequest()
-          .parameter("folderId", parentId)
-          .errorKey(CedarErrorKey.PARENT_FOLDER_NOT_FOUND)
-          .errorMessage("The parent folder is not present!")
-          .build();
-    } else {
-      // Later we will guarantee some kind of uniqueness for the resource names
-      // Currently we allow duplicate names, the id is the PK
-      FolderServerResource brandNewResource = WorkspaceObjectBuilder.forNodeType(nodeType, id,
-          name.stringValue(), description.stringValue(), identifier.stringValue(), version, publicationStatus);
-      if (nodeType.isVersioned()) {
-        brandNewResource.setLatestVersion(true);
-        brandNewResource.setLatestDraftVersion(publicationStatus == BiboStatus.DRAFT);
-        brandNewResource.setLatestPublishedVersion(publicationStatus == BiboStatus.PUBLISHED);
-      }
-      if (CedarNodeType.INSTANCE.getValue().equals(nodeType.getValue())) {
-        FolderServerInstance brandNewInstance = (FolderServerInstance) brandNewResource;
-        brandNewInstance.setIsBasedOn(isBasedOnString);
-      }
-      newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
-    }
-
-    if (newResource != null) {
-      UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-      URI uri = builder.path(CedarUrlUtil.urlEncode(id)).build();
-      return Response.created(uri).entity(newResource).build();
-    } else {
-      return CedarResponse.badRequest()
-          .parameter("id", id)
-          .parameter("parentId", parentId)
-          .parameter("resourceType", nodeTypeString)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_CREATED)
-          .errorMessage("The resource was not created!")
-          .build();
-    }
   }
 
   @GET
