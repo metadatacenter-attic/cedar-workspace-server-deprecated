@@ -355,8 +355,7 @@ public class FoldersResource extends AbstractFolderServerResource {
           .errorMessage("User home folder permissions can not be changed")
           .build();
     } else {
-      BackendCallResult backendCallResult = permissionSession.updateNodePermissions(folderId, permissionsRequest,
-          FolderOrResource.FOLDER);
+      BackendCallResult backendCallResult = permissionSession.updateNodePermissions(folderId, permissionsRequest);
       if (backendCallResult.isError()) {
         throw new CedarBackendException(backendCallResult);
       }

@@ -143,8 +143,7 @@ public class CommandResource extends AbstractFolderServerResource {
         NodePermissionUser newOwner = new NodePermissionUser();
         newOwner.setId(c.getCedarUser().getId());
         permissionsRequest.setOwner(newOwner);
-        BackendCallResult backendCallResult = permissionSession.updateNodePermissions(newId, permissionsRequest,
-            FolderOrResource.RESOURCE);
+        BackendCallResult backendCallResult = permissionSession.updateNodePermissions(newId, permissionsRequest);
         if (backendCallResult.isError()) {
           throw new CedarBackendException(backendCallResult);
         }

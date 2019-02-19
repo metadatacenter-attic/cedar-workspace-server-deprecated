@@ -1,14 +1,14 @@
 package org.metadatacenter.cedar.workspace.resources;
 
 import com.codahale.metrics.annotation.Timed;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
-import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.model.*;
+import org.metadatacenter.model.BiboStatus;
+import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.ResourceVersion;
+import org.metadatacenter.model.WorkspaceObjectBuilder;
 import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
 import org.metadatacenter.model.folderserver.basic.FolderServerInstance;
 import org.metadatacenter.model.folderserver.basic.FolderServerResource;
@@ -20,13 +20,9 @@ import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
 import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.server.neo4j.cypher.NodeProperty;
-import org.metadatacenter.server.result.BackendCallResult;
-import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
-import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.util.CedarNodeTypeUtil;
 import org.metadatacenter.util.http.CedarResponse;
 import org.metadatacenter.util.http.CedarUrlUtil;
-import org.metadatacenter.util.json.JsonMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -287,83 +283,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
       } else {
         return Response.ok().entity(updatedResource).build();
       }
-    }
-  }
-
-  @DELETE
-  @Timed
-  @Path("/{id}")
-  public Response deleteResource(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    FolderServerResource resource = folderSession.findResourceById(id);
-    if (resource == null) {
-      return CedarResponse.notFound()
-          .id(id)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-          .errorMessage("The resource can not be found by id")
-          .build();
-    } else {
-      ResourceUri previousVersion = null;
-      if (resource.getType().isVersioned() && resource.isLatestVersion() != null && resource.isLatestVersion()) {
-        previousVersion = resource.getPreviousVersion();
-      }
-
-      boolean deleted = folderSession.deleteResourceById(id, CedarNodeType.ELEMENT);
-      if (deleted) {
-        if (previousVersion != null) {
-          folderSession.setLatestVersion(previousVersion.getValue());
-          folderSession.setLatestPublishedVersion(previousVersion.getValue());
-        }
-        return Response.noContent().build();
-      } else {
-        return CedarResponse.internalServerError()
-            .id(id)
-            .errorKey(CedarErrorKey.RESOURCE_NOT_DELETED)
-            .errorMessage("The resource can not be delete by id")
-            .build();
-      }
-    }
-  }
-
-  @PUT
-  @Timed
-  @Path("/{id}/permissions")
-  public Response updatePermissions(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
-    c.must(c.request().getRequestBody()).be(NonEmpty);
-    JsonNode permissionUpdateRequest = c.request().getRequestBody().asJson();
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-    PermissionServiceSession permissionSession = CedarDataServices.getPermissionServiceSession(c);
-
-    CedarNodePermissionsRequest permissionsRequest = null;
-    try {
-      permissionsRequest = JsonMapper.MAPPER.treeToValue(permissionUpdateRequest, CedarNodePermissionsRequest.class);
-    } catch (JsonProcessingException e) {
-      log.error("Error while reading permission update request", e);
-    }
-
-    FolderServerResource resource = folderSession.findResourceById(id);
-    if (resource == null) {
-      return CedarResponse.notFound()
-          .id(id)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-          .errorMessage("The resource can not be found by id")
-          .build();
-    } else {
-      BackendCallResult backendCallResult = permissionSession.updateNodePermissions(id, permissionsRequest,
-          FolderOrResource.RESOURCE);
-      if (backendCallResult.isError()) {
-        throw new CedarBackendException(backendCallResult);
-      }
-      CedarNodePermissions permissions = permissionSession.getNodePermissions(id);
-      return Response.ok().entity(permissions).build();
     }
   }
 
