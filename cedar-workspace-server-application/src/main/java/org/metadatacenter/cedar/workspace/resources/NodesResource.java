@@ -35,49 +35,6 @@ public class NodesResource extends AbstractFolderServerResource {
     super(cedarConfig);
   }
 
-  @GET
-  @Timed
-  public Response findAllNodes(@QueryParam(QP_SORT) Optional<String> sortParam,
-                               @QueryParam(QP_LIMIT) Optional<Integer> limitParam,
-                               @QueryParam(QP_OFFSET) Optional<Integer> offsetParam) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
 
-    c.must(c.user()).be(LoggedIn);
-
-    UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI absoluteURI = builder.queryParam(QP_SORT, sortParam).build();
-
-    PagedSortedQuery pagedSortedQuery = new PagedSortedQuery(
-        cedarConfig.getFolderRESTAPI().getPagination())
-        .sort(sortParam)
-        .limit(limitParam)
-        .offset(offsetParam);
-    pagedSortedQuery.validate();
-
-    int limit = pagedSortedQuery.getLimit();
-    int offset = pagedSortedQuery.getOffset();
-    List<String> sortList = pagedSortedQuery.getSortList();
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    // Retrieve all resources
-    List<FolderServerNodeExtract> resources = folderSession.findAllNodes(limit, offset, sortList);
-
-    // Build response
-    FolderServerNodeListResponse r = new FolderServerNodeListResponse();
-    r.setNodeListQueryType(NodeListQueryType.ALL_NODES);
-    NodeListRequest req = new NodeListRequest();
-    req.setLimit(limit);
-    req.setOffset(offset);
-    req.setSort(sortList);
-    r.setRequest(req);
-    long total = folderSession.findAllNodesCount();
-    r.setTotalCount(total);
-    r.setCurrentOffset(offset);
-    r.setResources(resources);
-    r.setPaging(LinkHeaderUtil.getPagingLinkHeaders(absoluteURI, total, limit, offset));
-
-    return Response.ok().entity(r).build();
-  }
 
 }
