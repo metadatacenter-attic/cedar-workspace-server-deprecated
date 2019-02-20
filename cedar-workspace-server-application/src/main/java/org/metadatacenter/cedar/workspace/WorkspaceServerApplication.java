@@ -5,7 +5,10 @@ import io.dropwizard.setup.Environment;
 import org.metadatacenter.bridge.CedarDataServices;
 import org.metadatacenter.cedar.util.dw.CedarMicroserviceApplication;
 import org.metadatacenter.cedar.workspace.health.FolderServerHealthCheck;
-import org.metadatacenter.cedar.workspace.resources.*;
+import org.metadatacenter.cedar.workspace.resources.CommandResource;
+import org.metadatacenter.cedar.workspace.resources.FoldersResource;
+import org.metadatacenter.cedar.workspace.resources.IndexResource;
+import org.metadatacenter.cedar.workspace.resources.SearchResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.model.ServerName;
 import org.metadatacenter.rest.context.CedarRequestContext;
@@ -43,9 +46,7 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
   public void runApp(WorkspaceServerConfiguration configuration, Environment environment) {
     environment.jersey().register(new IndexResource());
     environment.jersey().register(new CommandResource(cedarConfig));
-    environment.jersey().register(new FolderContentsResource(cedarConfig));
     environment.jersey().register(new FoldersResource(cedarConfig));
-    environment.jersey().register(new NodesResource(cedarConfig));
     environment.jersey().register(new SearchResource(cedarConfig));
 
     final FolderServerHealthCheck healthCheck = new FolderServerHealthCheck();
