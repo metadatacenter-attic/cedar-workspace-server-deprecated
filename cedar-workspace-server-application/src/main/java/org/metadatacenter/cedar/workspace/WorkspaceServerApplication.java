@@ -46,7 +46,6 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
     environment.jersey().register(new FolderContentsResource(cedarConfig));
     environment.jersey().register(new FoldersResource(cedarConfig));
     environment.jersey().register(new NodesResource(cedarConfig));
-    environment.jersey().register(new ResourcesResource(cedarConfig));
     environment.jersey().register(new SearchResource(cedarConfig));
     environment.jersey().register(new UsersResource(cedarConfig));
 
