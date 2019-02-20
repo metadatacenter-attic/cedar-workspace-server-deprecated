@@ -6,12 +6,9 @@ import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.exception.CedarException;
 import org.metadatacenter.model.folderserver.basic.FolderServerResource;
-import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerNodeCurrentUserReport;
-import org.metadatacenter.model.folderserver.currentuserpermissions.FolderServerResourceCurrentUserReport;
 import org.metadatacenter.model.folderserver.extract.FolderServerNodeExtract;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
-import org.metadatacenter.server.PermissionServiceSession;
 import org.metadatacenter.util.http.CedarResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,39 +59,6 @@ public class ResourcesResource extends AbstractFolderServerResource {
 
     return Response.ok().entity(resource).build();
 
-  }
-
-  @GET
-  @Timed
-  @Path("/{id}/current-user-report")
-  public Response getCurrentUserReport(@PathParam(PP_ID) String id) throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-    c.must(c.user()).be(LoggedIn);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    PermissionServiceSession permissionServiceSession = CedarDataServices.getPermissionServiceSession(c);
-
-    FolderServerResource resource = folderSession.findResourceById(id);
-    if (resource == null) {
-      return CedarResponse.notFound()
-          .id(id)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-          .errorMessage("The resource can not be found by id")
-          .build();
-    }
-
-    folderSession.addPathAndParentId(resource);
-
-    List<FolderServerNodeExtract> pathInfo = folderSession.findNodePathExtract(resource);
-    resource.setPathInfo(pathInfo);
-
-    FolderServerResourceCurrentUserReport resourceReport =
-        (FolderServerResourceCurrentUserReport) FolderServerNodeCurrentUserReport.fromNode(resource);
-
-    decorateResourceWithCurrentUserPermissions(c, resourceReport);
-
-    return Response.ok().entity(resourceReport).build();
   }
 
 }
