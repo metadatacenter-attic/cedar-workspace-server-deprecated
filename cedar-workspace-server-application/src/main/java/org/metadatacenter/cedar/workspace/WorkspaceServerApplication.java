@@ -8,7 +8,6 @@ import org.metadatacenter.cedar.workspace.health.FolderServerHealthCheck;
 import org.metadatacenter.cedar.workspace.resources.CommandResource;
 import org.metadatacenter.cedar.workspace.resources.FoldersResource;
 import org.metadatacenter.cedar.workspace.resources.IndexResource;
-import org.metadatacenter.cedar.workspace.resources.SearchResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.model.ServerName;
 import org.metadatacenter.rest.context.CedarRequestContext;
@@ -47,7 +46,6 @@ public class WorkspaceServerApplication extends CedarMicroserviceApplication<Wor
     environment.jersey().register(new IndexResource());
     environment.jersey().register(new CommandResource(cedarConfig));
     environment.jersey().register(new FoldersResource(cedarConfig));
-    environment.jersey().register(new SearchResource(cedarConfig));
 
     final FolderServerHealthCheck healthCheck = new FolderServerHealthCheck();
     environment.healthChecks().register("message", healthCheck);
