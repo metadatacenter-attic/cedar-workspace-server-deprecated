@@ -7,7 +7,10 @@ import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.error.CedarErrorType;
 import org.metadatacenter.exception.CedarBackendException;
 import org.metadatacenter.exception.CedarException;
-import org.metadatacenter.model.*;
+import org.metadatacenter.model.BiboStatus;
+import org.metadatacenter.model.CedarNodeType;
+import org.metadatacenter.model.ResourceVersion;
+import org.metadatacenter.model.WorkspaceObjectBuilder;
 import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
 import org.metadatacenter.model.folderserver.basic.FolderServerInstance;
 import org.metadatacenter.model.folderserver.basic.FolderServerResource;
@@ -309,66 +312,6 @@ public class CommandResource extends AbstractFolderServerResource {
           .errorKey(CedarErrorKey.RESOURCE_NOT_CREATED)
           .errorMessage("The resource was not created!")
           .build();
-    }
-  }
-
-  @POST
-  @Timed
-  @Path("/make-artifact-open")
-  public Response makeResourcePublic() throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-
-    c.must(c.user()).be(LoggedIn);
-
-    CedarRequestBody requestBody = c.request().getRequestBody();
-    String id = requestBody.get("id").stringValue();
-    String nodeTypeString = requestBody.get("nodeType").stringValue();
-
-    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    FolderServerResource sourceResource = folderSession.findResourceById(id);
-
-    if (sourceResource != null) {
-
-      folderSession.setOpen(id);
-
-      FolderServerResource updatedResource = folderSession.findResourceById(id);
-
-      return Response.ok().entity(updatedResource).build();
-    } else {
-      return CedarResponse.notFound().build();
-    }
-  }
-
-  @POST
-  @Timed
-  @Path("/make-artifact-not-open")
-  public Response makeResourceNotPublic() throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-
-    c.must(c.user()).be(LoggedIn);
-
-    CedarRequestBody requestBody = c.request().getRequestBody();
-    String id = requestBody.get("id").stringValue();
-    String nodeTypeString = requestBody.get("nodeType").stringValue();
-
-    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    FolderServerResource sourceResource = folderSession.findResourceById(id);
-
-    if (sourceResource != null) {
-
-      folderSession.setNotOpen(id);
-
-      FolderServerResource updatedResource = folderSession.findResourceById(id);
-
-      return Response.ok().entity(updatedResource).build();
-    } else {
-      return CedarResponse.notFound().build();
     }
   }
 
