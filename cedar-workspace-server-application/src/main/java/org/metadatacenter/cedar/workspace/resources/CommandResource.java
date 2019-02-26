@@ -51,48 +51,6 @@ public class CommandResource extends AbstractFolderServerResource {
 
   @POST
   @Timed
-  @Path("/move-node-to-folder")
-  public Response moveNodeToFolder() throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-
-    c.must(c.user()).be(LoggedIn);
-
-    CedarRequestBody requestBody = c.request().getRequestBody();
-    String sourceId = requestBody.get("sourceId").stringValue();
-    String nodeTypeString = requestBody.get("nodeType").stringValue();
-    String folderId = requestBody.get("folderId").stringValue();
-
-    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    boolean moved;
-    FolderServerFolder targetFolder = folderSession.findFolderById(folderId);
-    if (nodeType == CedarNodeType.FOLDER) {
-      FolderServerFolder sourceFolder = folderSession.findFolderById(sourceId);
-      moved = folderSession.moveFolder(sourceFolder, targetFolder);
-    } else {
-      FolderServerResource sourceResource = folderSession.findResourceById(sourceId);
-      moved = folderSession.moveResource(sourceResource, targetFolder);
-    }
-    if (!moved) {
-      BackendCallResult backendCallResult = new BackendCallResult();
-      backendCallResult.addError(CedarErrorType.SERVER_ERROR)
-          .errorKey(CedarErrorKey.NODE_NOT_MOVED)
-          .message("There was an error while moving the node");
-      throw new CedarBackendException(backendCallResult);
-    }
-
-    // TODO: maybe this should not be CREATED.
-    // TODO: if yes, what should be the returned location?
-    UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-    URI uri = builder.build();
-
-    return Response.created(uri).build();
-  }
-
-  @POST
-  @Timed
   @Path("/create-draft-resource")
   public Response createDraftResource() throws CedarException {
     CedarRequestContext c = buildRequestContext();
