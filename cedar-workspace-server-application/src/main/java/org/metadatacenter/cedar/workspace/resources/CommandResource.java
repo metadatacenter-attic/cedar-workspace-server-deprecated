@@ -12,9 +12,7 @@ import org.metadatacenter.model.CedarNodeType;
 import org.metadatacenter.model.ResourceVersion;
 import org.metadatacenter.model.WorkspaceObjectBuilder;
 import org.metadatacenter.model.folderserver.basic.FolderServerFolder;
-import org.metadatacenter.model.folderserver.basic.FolderServerInstance;
 import org.metadatacenter.model.folderserver.basic.FolderServerResource;
-import org.metadatacenter.rest.assertion.noun.CedarParameter;
 import org.metadatacenter.rest.assertion.noun.CedarRequestBody;
 import org.metadatacenter.rest.context.CedarRequestContext;
 import org.metadatacenter.server.FolderServiceSession;
@@ -24,9 +22,6 @@ import org.metadatacenter.server.result.BackendCallResult;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissions;
 import org.metadatacenter.server.security.model.auth.CedarNodePermissionsRequest;
 import org.metadatacenter.server.security.model.auth.NodePermissionUser;
-import org.metadatacenter.util.CedarNodeTypeUtil;
-import org.metadatacenter.util.http.CedarResponse;
-import org.metadatacenter.util.http.CedarUrlUtil;
 
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -39,7 +34,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.metadatacenter.rest.assertion.GenericAssertions.LoggedIn;
-import static org.metadatacenter.rest.assertion.GenericAssertions.NonEmpty;
 
 @Path("/command")
 @Produces(MediaType.APPLICATION_JSON)
@@ -166,111 +160,6 @@ public class CommandResource extends AbstractFolderServerResource {
     URI uri = builder.build();
 
     return Response.created(uri).entity(updatedResource).build();
-  }
-
-  @POST
-  @Timed
-  @Path("/copy-resource-to-folder")
-  public Response copyResourceToFolder() throws CedarException {
-    CedarRequestContext c = buildRequestContext();
-
-    c.must(c.user()).be(LoggedIn);
-
-    c.must(c.request().getRequestBody()).be(NonEmpty);
-
-    FolderServiceSession folderSession = CedarDataServices.getFolderServiceSession(c);
-
-    CedarParameter parentIdP = c.request().getRequestBody().get("parentId");
-    c.must(parentIdP).be(NonEmpty);
-    String parentId = parentIdP.stringValue();
-
-    CedarParameter idP = c.request().getRequestBody().get("id");
-    c.must(idP).be(NonEmpty);
-    String id = idP.stringValue();
-
-    CedarParameter oldIdP = c.request().getRequestBody().get("oldId");
-    c.must(oldIdP).be(NonEmpty);
-    String oldId = oldIdP.stringValue();
-
-    CedarParameter name = c.request().getRequestBody().get("name");
-    c.must(name).be(NonEmpty);
-
-    CedarParameter nodeTypeP = c.request().getRequestBody().get("nodeType");
-    c.must(nodeTypeP).be(NonEmpty);
-
-    String nodeTypeString = nodeTypeP.stringValue();
-
-    CedarNodeType nodeType = CedarNodeType.forValue(nodeTypeString);
-    if (CedarNodeTypeUtil.isNotValidForRestCall(nodeType)) {
-      return CedarResponse.badRequest()
-          .errorMessage("You passed an illegal nodeType:'" + nodeTypeString +
-              "'. The allowed values are:" + CedarNodeTypeUtil.getValidNodeTypesForRestCalls())
-          .errorKey(CedarErrorKey.INVALID_NODE_TYPE)
-          .parameter("invalidNodeTypes", nodeTypeString)
-          .parameter("allowedNodeTypes", CedarNodeTypeUtil.getValidNodeTypeValuesForRestCalls())
-          .build();
-    }
-
-    CedarParameter description = c.request().getRequestBody().get("description");
-
-    CedarParameter identifier = c.request().getRequestBody().get("identifier");
-
-    ResourceVersion version = ResourceVersion.ZERO_ZERO_ONE;
-    BiboStatus publicationStatus = BiboStatus.DRAFT;
-
-    // check existence of parent folder
-    FolderServerResource newResource = null;
-    FolderServerFolder parentFolder = folderSession.findFolderById(parentId);
-
-    String candidatePath = null;
-    if (parentFolder == null) {
-      return CedarResponse.badRequest()
-          .parameter("folderId", parentId)
-          .errorKey(CedarErrorKey.PARENT_FOLDER_NOT_FOUND)
-          .errorMessage("The parent folder is not present!")
-          .build();
-    } else {
-      // Later we will guarantee some kind of uniqueness for the resource names
-      // Currently we allow duplicate names, the id is the PK
-      FolderServerResource oldResource = folderSession.findResourceById(oldId);
-      if (oldResource == null) {
-        return CedarResponse.notFound()
-            .parameter("id", id)
-            .parameter("resourceType", nodeTypeString)
-            .errorKey(CedarErrorKey.RESOURCE_NOT_FOUND)
-            .errorMessage("The source resource was not found!")
-            .build();
-      } else {
-        FolderServerResource brandNewResource = WorkspaceObjectBuilder.forNodeType(nodeType, id,
-            name.stringValue(), description.stringValue(), identifier.stringValue(), version, publicationStatus);
-        if (nodeType.isVersioned()) {
-          brandNewResource.setLatestVersion(true);
-          brandNewResource.setLatestDraftVersion(publicationStatus == BiboStatus.DRAFT);
-          brandNewResource.setLatestPublishedVersion(publicationStatus == BiboStatus.PUBLISHED);
-        }
-        if (nodeType == CedarNodeType.INSTANCE) {
-          ((FolderServerInstance) brandNewResource)
-              .setIsBasedOn(((FolderServerInstance) oldResource).getIsBasedOn().getValue());
-        }
-        newResource = folderSession.createResourceAsChildOfId(brandNewResource, parentId);
-      }
-    }
-
-    if (newResource != null) {
-      folderSession.setDerivedFrom(id, oldId);
-
-      UriBuilder builder = uriInfo.getAbsolutePathBuilder();
-      URI uri = builder.path(CedarUrlUtil.urlEncode(id)).build();
-      return Response.created(uri).entity(newResource).build();
-    } else {
-      return CedarResponse.badRequest()
-          .parameter("id", id)
-          .parameter("parentId", parentId)
-          .parameter("resourceType", nodeTypeString)
-          .errorKey(CedarErrorKey.RESOURCE_NOT_CREATED)
-          .errorMessage("The resource was not created!")
-          .build();
-    }
   }
 
 }
