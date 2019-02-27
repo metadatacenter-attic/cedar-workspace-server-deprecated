@@ -4,6 +4,7 @@ import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.metadatacenter.bridge.CedarDataServices;
+import org.metadatacenter.cedar.util.dw.CedarMicroserviceResource;
 import org.metadatacenter.config.CedarConfig;
 import org.metadatacenter.error.CedarErrorKey;
 import org.metadatacenter.error.CedarErrorReasonKey;
@@ -42,7 +43,7 @@ import static org.metadatacenter.rest.assertion.GenericAssertions.NonEmpty;
 
 @Path("/folders")
 @Produces(MediaType.APPLICATION_JSON)
-public class FoldersResource extends AbstractFolderServerResource {
+public class FoldersResource extends CedarMicroserviceResource {
 
   private static final Logger log = LoggerFactory.getLogger(FoldersResource.class);
 
